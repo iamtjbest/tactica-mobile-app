@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Tactica",
+    "slug": "tactica",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#050d07",
+    "splash": {
+      "backgroundColor": "#050d07",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tactica.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#050d07"
+      },
+      "package": "com.tactica.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset"
+    ],
+    "scheme": "tactica",
+    "extra": {
+      "apiUrl": "https://tactica-backend-hdbd.onrender.com"
+    }
+  }
+}

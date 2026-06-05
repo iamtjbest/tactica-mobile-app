@@ -1,0 +1,26 @@
+{"_e":"root:init","_t":1780653493795,"format":"v0-jsonl","version":"56.1.13"}
+{"_e":"env:mode","_t":1780653493796,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1780653493806,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1780653495037,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1780653496268,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1780653509456,"atlas":false,"workers":3,"host":"::","port":8081}
+{"_e":"root:init","_t":1780654088432,"format":"v0-jsonl","version":"56.1.13"}
+{"_e":"env:mode","_t":1780654088437,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1780654088447,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1780654089722,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1780654091273,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1780654104314,"atlas":false,"workers":3,"host":"::","port":8081}
+{"_e":"root:init","_t":1780656516162,"format":"v0-jsonl","version":"56.1.13"}
+{"_e":"env:mode","_t":1780656516165,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1780656516175,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1780656518086,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1780656520120,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1780656537606,"atlas":false,"workers":3,"host":"::","port":8081}
+{"_e":"metro:client_log","_t":1780656558280,"level":"error","data":["Project is incompatible with this version of Expo Go\n\nThis project requires a newer version of Expo Go.\n\nHow to fix this error:\nDownload the latest version of Expo Go from the Play Store."]}
+{"_e":"root:init","_t":1780657287620,"format":"v0-jsonl","version":"56.1.13"}
+{"_e":"env:mode","_t":1780657287623,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1780657287631,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1780657289279,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1780657291571,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1780657303525,"atlas":false,"workers":3,"host":"::","port":8081}
+{"_e":"metro:client_log","_t":1780657306893,"level":"error","data":["Project is incompatible with this version of Expo Go\n\nThis project requires a newer version of Expo Go.\n\nHow to fix this error:\nDownload the latest version of Expo Go from the Play Store."]}

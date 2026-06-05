@@ -1,0 +1,28 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer dashed glowing ring -->
+  <circle cx="100" cy="100" r="85" stroke="#CCFF00" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.3" />
+  
+  <!-- Outer solid ring -->
+  <circle cx="100" cy="100" r="75" stroke="#CCFF00" stroke-width="2" opacity="0.6" />
+  
+  <!-- Inner ring -->
+  <circle cx="100" cy="100" r="50" stroke="#CCFF00" stroke-width="1.5" opacity="0.4" />
+  
+  <!-- Tactical lines (cross-hairs) -->
+  <line x1="100" y1="15" x2="100" y2="185" stroke="#CCFF00" stroke-width="1" opacity="0.2" stroke-dasharray="4 4" />
+  <line x1="15" y1="100" x2="185" y2="100" stroke="#CCFF00" stroke-width="1" opacity="0.2" stroke-dasharray="4 4" />
+  
+  <!-- Tactical positions (nodes) representing players on a pitch -->
+  <circle cx="100" cy="50" r="6" fill="#CCFF00" />
+  <circle cx="55" cy="90" r="6" fill="#CCFF00" />
+  <circle cx="145" cy="90" r="6" fill="#CCFF00" />
+  <circle cx="70" cy="140" r="6" fill="#CCFF00" />
+  <circle cx="130" cy="140" r="6" fill="#CCFF00" />
+  
+  <!-- Connecting tactical lines -->
+  <path d="M100 50 L55 90 M100 50 L145 90 M55 90 L70 140 M145 90 L130 140 M70 140 L130 140" stroke="#CCFF00" stroke-width="1.5" opacity="0.6" />
+  
+  <!-- Central glowing tactical node -->
+  <circle cx="100" cy="100" r="10" fill="#CCFF00" />
+  <circle cx="100" cy="100" r="20" stroke="#CCFF00" stroke-width="1" opacity="0.4" />
+</svg>
