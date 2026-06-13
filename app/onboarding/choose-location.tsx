@@ -1,6 +1,9 @@
 import React, { useMemo, useState, type ReactElement } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { SearchIcon } from "@/components/Icons";
+import * as Location from "expo-location";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type CountryOption = {
   id: string;
@@ -14,12 +17,64 @@ const countryOptions: CountryOption[] = [
   { id: "united-kingdom", flag: "🇬🇧", name: "United Kingdom", subtitle: "Premier League · EFL" },
   { id: "spain", flag: "🇪🇸", name: "Spain", subtitle: "La Liga · Copa del Rey" },
   { id: "germany", flag: "🇩🇪", name: "Germany", subtitle: "Bundesliga · DFB-Pokal" },
+  { id: "france", flag: "🇫🇷", name: "France", subtitle: "Ligue 1 · Coupe de France" },
+  { id: "italy", flag: "🇮🇹", name: "Italy", subtitle: "Serie A · Coppa Italia" },
+  { id: "brazil", flag: "🇧🇷", name: "Brazil", subtitle: "Brasileirão · Copa do Brasil" },
+  { id: "netherlands", flag: "🇳🇱", name: "Netherlands", subtitle: "Eredivisie · KNVB Beker" },
+  { id: "portugal", flag: "🇵🇹", name: "Portugal", subtitle: "Primeira Liga · Taça de Portugal" },
 ];
 
 export const ChooseLocation = (): ReactElement => {
+  const { from } = useLocalSearchParams();
   const [selectedCountry, setSelectedCountry] = useState<string>("nigeria");
-  const [searchQuery, setSearchQuery] = useState<string>("").trim;
   const [queryVal, setQueryVal] = useState<string>("");
+
+  const handleUseLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        alert("Permission to access location was denied. Please select manually.");
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({});
+      const geocodes = await Location.reverseGeocodeAsync({
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+      });
+      if (geocodes && geocodes.length > 0) {
+        const countryName = geocodes[0].country;
+        if (countryName) {
+          const matched = countryOptions.find(
+            (c) => c.name.toLowerCase() === countryName.toLowerCase()
+          );
+          if (matched) {
+            setSelectedCountry(matched.id);
+            alert(`Detected Location: ${matched.name}`);
+          } else {
+            alert(`Detected Location: ${countryName}. We selected Nigeria as fallback.`);
+            setSelectedCountry("nigeria");
+          }
+        } else {
+          alert("Could not detect country name from location.");
+        }
+      } else {
+        alert("Could not retrieve geocode data.");
+      }
+    } catch (err) {
+      alert("Error detecting location: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const handleContinue = async () => {
+    const countryObj = countryOptions.find(c => c.id === selectedCountry);
+    const countryName = countryObj ? countryObj.name : "Nigeria";
+    await AsyncStorage.setItem("@location", countryName);
+    if (from === "profile") {
+      router.back();
+    } else {
+      router.push("/onboarding/favorite-team");
+    }
+  };
 
   const filteredCountries = useMemo(() => {
     const normalizedQuery = queryVal.trim().toLowerCase();
@@ -33,7 +88,6 @@ export const ChooseLocation = (): ReactElement => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.glow} pointerEvents="none" />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         
         {/* Progress Bar */}
@@ -51,7 +105,7 @@ export const ChooseLocation = (): ReactElement => {
         </View>
 
         {/* Use My Location Button */}
-        <TouchableOpacity style={styles.locationButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.locationButton} activeOpacity={0.8} onPress={handleUseLocation}>
           <View style={styles.locationIconBg}>
             <Text style={{ color: "#ccff00", fontSize: 18 }}>📍</Text>
           </View>
@@ -70,6 +124,7 @@ export const ChooseLocation = (): ReactElement => {
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
+          <SearchIcon size={15} />
           <TextInput
             value={queryVal}
             onChangeText={setQueryVal}
@@ -113,7 +168,7 @@ export const ChooseLocation = (): ReactElement => {
         </View>
 
         {/* Continue Button */}
-        <TouchableOpacity style={styles.continueButton} activeOpacity={0.8} onPress={() => router.push("/onboarding/favorite-team")}>
+        <TouchableOpacity style={styles.continueButton} activeOpacity={0.8} onPress={handleContinue}>
           <Text style={styles.continueText}>Continue</Text>
         </TouchableOpacity>
 
@@ -129,15 +184,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0d1317",
   },
-  glow: {
-    position: "absolute",
-    top: -46,
-    left: -57,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: "rgba(204, 255, 0, 0.07)",
-  },
+
   content: {
     paddingHorizontal: 16,
     paddingTop: 32,
@@ -177,18 +224,21 @@ const styles = StyleSheet.create({
   step: {
     color: "#ccff00",
     fontSize: 11,
+    fontFamily: "DMSans-Bold",
     fontWeight: "700",
     letterSpacing: 2.2,
   },
   title: {
     color: "#ffffff",
     fontSize: 32,
+    fontFamily: "PlayfairDisplay-Bold",
     fontWeight: "700",
     lineHeight: 38,
   },
   subtitle: {
     color: "#8e9bae",
     fontSize: 13,
+    fontFamily: "DMSans-Regular",
     lineHeight: 19.5,
   },
   locationButton: {
@@ -217,11 +267,13 @@ const styles = StyleSheet.create({
   locationButtonTitle: {
     color: "#ccff00",
     fontSize: 14,
+    fontFamily: "DMSans-Bold",
     fontWeight: "700",
   },
   locationButtonSub: {
     color: "#8e9bae",
     fontSize: 11,
+    fontFamily: "DMSans-Regular",
     marginTop: 2,
   },
   dividerContainer: {
@@ -239,6 +291,7 @@ const styles = StyleSheet.create({
   dividerText: {
     color: "#8e9bae",
     fontSize: 12,
+    fontFamily: "DMSans-Regular",
   },
   searchContainer: {
     width: "100%",
@@ -248,17 +301,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2a3b47",
     paddingHorizontal: 16,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     marginBottom: 20,
   },
   searchInput: {
     color: "#ffffff",
     fontSize: 14,
+    fontFamily: "DMSans-Regular",
+    flex: 1,
     height: "100%",
   },
   popularHeader: {
     color: "#8e9bae",
     fontSize: 11,
+    fontFamily: "DMSans-Bold",
     fontWeight: "700",
     letterSpacing: 1.5,
     marginBottom: 8,
@@ -298,11 +356,13 @@ const styles = StyleSheet.create({
   countryName: {
     color: "#ffffff",
     fontSize: 14,
+    fontFamily: "DMSans-Bold",
     fontWeight: "600",
   },
   countrySub: {
     color: "#8e9bae",
     fontSize: 11,
+    fontFamily: "DMSans-Regular",
     marginTop: 2,
   },
   radio: {
@@ -343,6 +403,7 @@ const styles = StyleSheet.create({
   continueText: {
     color: "#000000",
     fontSize: 16,
+    fontFamily: "DMSans-Bold",
     fontWeight: "700",
   },
 });

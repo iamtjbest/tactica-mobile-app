@@ -1,24 +1,43 @@
-import { useId, useState, type ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView } from "react-native";
 import { LeagueSelectionListSection } from "./LeagueSelectionListSection";
 import { SelectionHeaderSection } from "./SelectionHeaderSection";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
 
 export const FavouriteTeam = (): ReactElement => {
+  const { from } = useLocalSearchParams();
   const [searchValue, setSearchValue] = useState("");
+  const [selectedTeam, setSelectedTeam] = useState("");
+
+  const handleContinue = async () => {
+    await AsyncStorage.setItem("@favorite_team", selectedTeam);
+    if (from === "profile") {
+      router.back();
+    } else {
+      router.push("/onboarding/loading");
+    }
+  };
 
   const progressItems = [
     { active: true },
-    { active: false },
+    { active: true },
     { active: false },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Background radial glow */}
-      <View style={styles.glow} pointerEvents="none" />
-
       <View style={styles.content}>
+        {from === "profile" && (
+          <TouchableOpacity 
+            style={styles.backBtn} 
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
         {/* Progress Navigation */}
         <View style={styles.progressContainer}>
           {progressItems.map((item, index) => (
@@ -45,10 +64,19 @@ export const FavouriteTeam = (): ReactElement => {
           />
         </View>
 
-        <LeagueSelectionListSection />
+        <LeagueSelectionListSection
+          searchQuery={searchValue}
+          selectedTeam={selectedTeam}
+          onSelectTeam={setSelectedTeam}
+        />
 
         {/* Continue Button */}
-        <TouchableOpacity style={styles.continueButton} activeOpacity={0.8} onPress={() => router.push("/onboarding/loading")}>
+        <TouchableOpacity 
+          style={[styles.continueButton, !selectedTeam && { opacity: 0.6 }]} 
+          activeOpacity={0.8} 
+          disabled={!selectedTeam}
+          onPress={handleContinue}
+        >
           <Text style={styles.continueText}>Continue</Text>
         </TouchableOpacity>
       </View>
@@ -62,15 +90,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0d1317",
-  },
-  glow: {
-    position: "absolute",
-    top: -46,
-    left: -57,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: "rgba(204, 255, 0, 0.07)",
   },
   content: {
     flex: 1,
@@ -117,6 +136,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: "#ffffff",
     fontSize: 14,
+    fontFamily: "DMSans-Regular",
     height: "100%",
   },
   continueButton: {
@@ -136,6 +156,12 @@ const styles = StyleSheet.create({
   continueText: {
     color: "#000000",
     fontSize: 16,
+    fontFamily: "DMSans-Bold",
     fontWeight: "700",
+  },
+  backBtn: {
+    paddingVertical: 8,
+    alignSelf: "flex-start",
+    marginBottom: 8,
   },
 });

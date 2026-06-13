@@ -34,7 +34,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       {/* Expo Router automatically creates your navigation stack from your files! */}
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#0D1317" } }}>
         {/* The first screen the app hits (your login/first screen) */}
         <Stack.Screen name="index" /> 
         

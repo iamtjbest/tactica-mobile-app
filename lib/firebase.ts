@@ -1,10 +1,12 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth'; // We will need this for your Create Account screen!
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { initializeAuth, getAuth } from "firebase/auth";
+// @ts-ignore
+import { getReactNativePersistence } from "firebase/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Your specific Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBlbYAyeCkJfmHnSzXzAtDnJECS1IM9iuY",
+  apiKey: "AIzaSyBlbYAyEcKJfmHnSzXzAtDnJECS1IM9iuY",
   authDomain: "tactica-backend.firebaseapp.com",
   projectId: "tactica-backend",
   storageBucket: "tactica-backend.firebasestorage.app",
@@ -12,9 +14,26 @@ const firebaseConfig = {
   appId: "1:749983115247:web:99314e2040bff8bd76781a"
 };
 
-// Initialize the Firebase Engine
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase safely
+let app;
+let authInstance;
 
-// Initialize Database & Authentication and export them
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+  authInstance = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+} else {
+  app = getApp();
+  try {
+    authInstance = getAuth(app);
+  } catch (error) {
+    authInstance = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage)
+    });
+  }
+}
+
+export const auth = authInstance;
+
 export const db = getFirestore(app);
-export const auth = getAuth(app);

@@ -1,447 +1,237 @@
-import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  SafeAreaView, 
-  ScrollView, 
-  TextInput, 
+// app/(tabs)/chat.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  StatusBar,
+  ActivityIndicator
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, router, useNavigation } from 'expo-router';
+import { api } from '@/lib/api';
+import { SendIcon, ChatIcon } from '@/components/Icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { C, FONT, CARD_SHADOW } from '@/constants/theme';
 
-export default function TacticalAIChat() {
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+const TRANSLATIONS: Record<string, { tacticalAI: string; onlineReady: string; askEngine: string; today: string; errorMsg: string; }> = {
+  English: { tacticalAI: "Tactical AI", onlineReady: "Online · Ready", askEngine: "Ask the engine…", today: "Today", errorMsg: "Sorry, I had trouble parsing the engine. Please check your connection or try again." },
+  Español: { tacticalAI: "IA Táctica", onlineReady: "En línea · Listo", askEngine: "Pregunta al motor…", today: "Hoy", errorMsg: "Lo siento, tuve problemas para conectar. Intente de nuevo." }
+};
+
+export default function ChatScreen() {
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ query?: string }>();
+  const navigation = useNavigation();
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [language, setLanguage] = useState("English");
+
+  const t = (key: keyof typeof TRANSLATIONS.English): string => {
+    const lang = TRANSLATIONS[language] ? language : "English";
+    return TRANSLATIONS[lang][key] || TRANSLATIONS.English[key];
+  };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const cachedLang = await AsyncStorage.getItem("@language");
+      if (cachedLang) setLanguage(cachedLang);
+    };
+    loadSettings();
+    const unsubscribeFocus = navigation.addListener('focus', () => loadSettings());
+    return unsubscribeFocus;
+  }, [navigation]);
+
+  // Handle auto-send from Scout screen
+  // Inside app/(tabs)/chat.tsx
+  useEffect(() => {
+    if (params.query) {
+      // Decode the string from the Scout screen
+      const decodedBriefingText = decodeURIComponent(params.query);
+
+      const initialBriefingId = Math.random().toString();
+      const compiledBriefingMessage: Message = {
+        id: initialBriefingId,
+        role: 'user',
+        content: decodedBriefingText,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setMessages([compiledBriefingMessage]);
+      triggerScoutResponse(decodedBriefingText, compiledBriefingMessage);
+
+      // Reset param
+      router.setParams({ query: undefined });
+    }
+  }, [params.query]);
+
+  const triggerScoutResponse = async (textPrompt: string, originalMsg: Message) => {
+    try {
+      setLoading(true);
+      const res = await api.chat({
+        my_team: "Home Side",
+        opp_team: "Away Side",
+        message: textPrompt,
+        history: []
+      });
+
+      setMessages(prev => [...prev, {
+        id: Math.random().toString(),
+        role: 'assistant',
+        content: res.reply || "Match simulation parameters established. Where shall we begin, Coach?",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        id: Math.random().toString(), role: 'assistant', content: t("errorMsg"),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputText.trim() || loading) return;
+    const userText = inputText.trim();
+    setInputText('');
+
+    const newUserMessage: Message = {
+      id: Math.random().toString(), role: 'user', content: userText,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    const updatedHistory = [...messages, newUserMessage];
+    setMessages(updatedHistory);
+
+    try {
+      setLoading(true);
+      const chatPayloadHistory = updatedHistory.map(m => ({ role: m.role, content: m.content }));
+      const response = await api.chat({ my_team: "Home", opp_team: "Away", message: userText, history: chatPayloadHistory });
+
+      setMessages([...updatedHistory, {
+        id: Math.random().toString(), role: 'assistant', content: response.reply,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } catch (error) {
+      setMessages([...updatedHistory, {
+        id: Math.random().toString(), role: 'assistant', content: t("errorMsg"),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      
-      {/* Top Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.headerIconBox}>
-          {/* Mock Back Chevron */}
-          <View style={styles.backChevron} />
-        </TouchableOpacity>
-        
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Tactical AI</Text>
-          <View style={styles.statusContainer}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Online · Ready</Text>
+    // FIXED: The outer view now forces a paddingBottom of 88 to avoid the absolute tab bar
+    <View style={[styles.container, { paddingBottom: 88 }]}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <StatusBar barStyle="light-content" />
+
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+          <TouchableOpacity style={styles.headerIconBox} onPress={() => router.back()} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.headerLeftBlock}>
+            <View style={styles.aiLogoSquare}><Ionicons name="sparkles" size={15} color={C.volt} /></View>
+            <View style={{ alignItems: "flex-start" }}>
+              <Text style={styles.headerTitle}>{t("tacticalAI")}</Text>
+              <View style={styles.statusIndicatorRow}>
+                <View style={styles.statusGreenDot} />
+                <Text style={styles.statusSubtext}>{t("onlineReady")}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.menuButton}>
-          <View style={styles.menuDot} />
-          <View style={styles.menuDot} />
-          <View style={styles.menuDot} />
-        </TouchableOpacity>
-      </View>
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollBody}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.dateLabelMarker}>{t("today")}</Text>
 
-      {/* Chat Area */}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
-      >
-        <ScrollView contentContainerStyle={styles.chatScroll} showsVerticalScrollIndicator={false}>
-          
-          {/* Date Pill */}
-          <View style={styles.datePill}>
-            <Text style={styles.datePillText}>Today, 9:41 AM</Text>
-          </View>
-
-          {/* User Message 1 */}
-          <View style={styles.messageRowRight}>
-            <View style={styles.bubbleUser}>
-              <Text style={styles.textUser}>What are Arsenal's defensive gaps?</Text>
+          {messages.map((msg) => {
+            const isUser = msg.role === 'user';
+            return (
+              <View key={msg.id} style={[styles.msgRow, isUser ? styles.msgRowUser : styles.msgRowAssistant]}>
+                <View style={[styles.chatBubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
+                  <Text style={[styles.bubbleText, isUser ? { color: "#000000" } : { color: C.tx }]}>{msg.content}</Text>
+                  <Text style={[styles.timestampLabel, isUser ? { color: "rgba(0,0,0,0.4)" } : { color: C.mt }]}>{msg.timestamp}</Text>
+                </View>
+              </View>
+            );
+          })}
+          {loading && (
+            <View style={[styles.msgRow, styles.msgRowAssistant]}>
+              <View style={[styles.chatBubble, styles.bubbleAssistant, { paddingVertical: 12 }]}>
+                <ActivityIndicator size="small" color={C.volt} />
+              </View>
             </View>
-            <Text style={styles.timestampText}>9:38 AM</Text>
-          </View>
-
-          {/* AI Message 1 */}
-          <View style={styles.messageRowLeft}>
-            <View style={styles.bubbleAI}>
-              <Text style={styles.textAI}>
-                Based on the 96-team scan, Villa's main{'\n'}gap is the left channel. Their LB pushes{'\n'}high, leaving space for diagonal runs.{'\n'}65% of goals conceded in last 5 matches came from that zone.
-              </Text>
-            </View>
-            <Text style={styles.timestampText}>9:38 AM</Text>
-          </View>
-
-          {/* Action Chips */}
-          <View style={styles.actionChipsContainer}>
-            <TouchableOpacity style={styles.actionChip}>
-              <Text style={styles.actionChipText}>See heatmap</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionChip}>
-              <Text style={styles.actionChipText}>Exploit gap</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* User Message 2 */}
-          <View style={styles.messageRowRight}>
-            <View style={styles.bubbleUser}>
-              <Text style={styles.textUser}>Suggest a formation to exploit this in a{'\n'}4-3-3.</Text>
-            </View>
-            <Text style={styles.timestampText}>9:40 AM</Text>
-          </View>
-
-          {/* AI Message 2 */}
-          <View style={styles.messageRowLeft}>
-            <View style={styles.bubbleAI}>
-              <Text style={styles.textAI}>
-                Push your right winger inside on a half-{'\n'}space run while your RB overlaps. This{'\n'}forces Villa's LB to choose. Your box-to-{'\n'}box CM should time late runs into that{'\n'}pocket.
-              </Text>
-            </View>
-            <Text style={styles.timestampText}>9:41 AM</Text>
-          </View>
-
-          {/* Typing Indicator */}
-          <View style={styles.typingIndicator}>
-            <View style={styles.typingDot} />
-            <View style={styles.typingDot} />
-            <View style={styles.typingDot} />
-          </View>
-
+          )}
         </ScrollView>
 
-        {/* Input Bar */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputTrayBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
           <View style={styles.inputBox}>
-            {/* Mock Magnifying Glass / Engine Icon */}
-            <View style={styles.inputIconContainer}>
-              <View style={styles.inputIcon} />
-            </View>
-            <TextInput 
-              style={styles.textInput} 
-              placeholder="Ask the engine…" 
-              placeholderTextColor="#8E9BAE"
+            <ChatIcon size={16} color="#8E9BAE" />
+            <TextInput
+              style={styles.textInput}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder={t("askEngine")}
+              placeholderTextColor="rgba(142, 155, 174, 0.4)"
+              editable={!loading}
+              onSubmitEditing={handleSendMessage}
             />
           </View>
-          <TouchableOpacity style={styles.sendButton}>
-            <View style={styles.sendIconContainer}>
-              {/* Mock Arrow built with borders */}
-              <View style={[styles.sendIconLine, { left: 7.79, top: 1.42, width: 7.79, height: 7.79 }]} />
-              <View style={[styles.sendIconLine, { left: 1.42, top: 1.42, width: 14.17, height: 14.17, backgroundColor: '#000000' }]} />
-            </View>
+          <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage} disabled={loading || !inputText.trim()} activeOpacity={0.85}>
+            <SendIcon size={18} color="#000000" />
           </TouchableOpacity>
         </View>
-
       </KeyboardAvoidingView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <View style={styles.navItem}>
-          <View style={[styles.navIconBase, { width: 15.75, height: 17.50, backgroundColor: '#CCFF00' }]} />
-          <Text style={[styles.navText, { color: '#CCFF00' }]}>Home</Text>
-          <View style={styles.navActiveDot} />
-        </View>
-        <View style={styles.navItem}>
-          <View style={[styles.navIconOutline, { width: 17.50, height: 15.75, borderColor: '#8E9BAE' }]} />
-          <Text style={styles.navText}>Pitch</Text>
-        </View>
-        <View style={styles.navItem}>
-          <View style={[styles.navIconOutline, { width: 15.75, height: 15.75, borderColor: '#8E9BAE' }]} />
-          <Text style={styles.navText}>AI Chat</Text>
-        </View>
-        <View style={styles.navItem}>
-          <View style={[styles.navIconOutline, { width: 14, height: 5.25, top: 13.13, borderColor: '#8E9BAE' }]} />
-          <View style={[styles.navIconOutline, { width: 7, height: 7, top: 2.63, borderColor: '#8E9BAE', borderRadius: 3.5 }]} />
-          <Text style={styles.navText}>Profile</Text>
-        </View>
-      </View>
-
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0D1317',
-  },
-  header: {
-    height: 62,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    backgroundColor: '#1A242B',
-    borderBottomWidth: 1,
-    borderBottomColor: '#2A3B47',
-    zIndex: 10,
-  },
-  headerIconBox: {
-    width: 34,
-    height: 34,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backChevron: {
-    width: 6.5,
-    height: 6.5,
-    borderLeftWidth: 1.5,
-    borderBottomWidth: 1.5,
-    borderColor: '#FFFFFF',
-    transform: [{ rotate: '45deg' }, { translateX: 1.5 }, { translateY: -1.5 }],
-  },
-  headerTitleContainer: {
-    flex: 1,
-    marginLeft: 12,
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    backgroundColor: '#CCFF00',
-    borderRadius: 3,
-    marginRight: 5,
-    shadowColor: '#CCFF00',
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statusText: {
-    color: '#CCFF00',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  menuButton: {
-    width: 34,
-    height: 34,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
-  },
-  menuDot: {
-    width: 4,
-    height: 4,
-    backgroundColor: '#8E9BAE',
-    borderRadius: 2,
-  },
-  keyboardAvoid: {
-    flex: 1,
-    marginBottom: 80, // Clearance for bottom navigation
-  },
-  chatScroll: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 20,
-    gap: 16, // Consistent spacing between message blocks
-  },
-  datePill: {
-    alignSelf: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 20,
-    marginBottom: 10,
-  },
-  datePillText: {
-    color: '#8E9BAE',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  messageRowRight: {
-    alignSelf: 'flex-end',
-    alignItems: 'flex-end',
-    maxWidth: '85%',
-  },
-  messageRowLeft: {
-    alignSelf: 'flex-start',
-    alignItems: 'flex-start',
-    maxWidth: '85%',
-  },
-  bubbleUser: {
-    backgroundColor: '#00E5FF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 4, // Sharp corner indicating sender
-  },
-  bubbleAI: {
-    backgroundColor: '#1A242B',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#2A3B47',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderBottomRightRadius: 18,
-    borderBottomLeftRadius: 4, // Sharp corner indicating sender
-  },
-  textUser: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 21.7,
-  },
-  textAI: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    lineHeight: 22.4,
-  },
-  timestampText: {
-    color: '#8E9BAE',
-    fontSize: 10,
-    marginTop: 4,
-    paddingHorizontal: 4,
-  },
-  actionChipsContainer: {
-    flexDirection: 'row',
-    alignSelf: 'flex-start',
-    gap: 10,
-    marginTop: -6, // Pull closer to the AI message
-    marginBottom: 4,
-  },
-  actionChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    backgroundColor: 'rgba(0, 229, 255, 0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 229, 255, 0.30)',
-    borderRadius: 20,
-  },
-  actionChipText: {
-    color: '#00E5FF',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  typingIndicator: {
-    flexDirection: 'row',
-    alignSelf: 'flex-start',
-    backgroundColor: '#1A242B',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: '#2A3B47',
-    gap: 6,
-    marginTop: 8,
-  },
-  typingDot: {
-    width: 6,
-    height: 6,
-    backgroundColor: '#8E9BAE',
-    borderRadius: 3,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: '#0D1317',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(42, 59, 71, 0.50)',
-    gap: 10,
-  },
-  inputBox: {
-    flex: 1,
-    height: 48,
-    backgroundColor: '#1A242B',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#2A3B47',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  inputIconContainer: {
-    width: 15,
-    height: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  inputIcon: {
-    width: 11.25,
-    height: 11.25,
-    borderWidth: 1.13,
-    borderColor: '#8E9BAE',
-    borderRadius: 5.6,
-  },
-  textInput: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 14,
-  },
-  sendButton: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#CCFF00',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#CCFF00',
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  sendIconContainer: {
-    width: 17,
-    height: 17,
-    position: 'relative',
-  },
-  sendIconLine: {
-    position: 'absolute',
-    borderWidth: 1.77,
-    borderColor: '#000000',
-  },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    flexDirection: 'row',
-    backgroundColor: 'rgba(26, 36, 43, 0.96)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(42, 59, 71, 0.70)',
-    paddingTop: 12,
-    paddingBottom: 32,
-    paddingHorizontal: 16,
-    justifyContent: 'space-between',
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  navIconBase: {
-    position: 'absolute',
-    top: 2,
-  },
-  navIconOutline: {
-    position: 'absolute',
-    borderWidth: 1.5,
-    top: 2,
-  },
-  navText: {
-    color: '#8E9BAE',
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 24,
-  },
-  navActiveDot: {
-    width: 4,
-    height: 4,
-    backgroundColor: '#CCFF00',
-    borderRadius: 2,
-    marginTop: 2,
-    shadowColor: '#CCFF00',
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-  }
+  container: { flex: 1, backgroundColor: '#0D1317' },
+  header: { height: 84, backgroundColor: '#1A242B', borderBottomWidth: 1, borderBottomColor: 'rgba(42, 59, 71, 0.50)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 12 },
+  headerIconBox: { width: 34, height: 34, backgroundColor: 'rgba(255, 255, 255, 0.06)', borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  headerLeftBlock: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  aiLogoSquare: { width: 36, height: 36, backgroundColor: 'rgba(204, 255, 0, 0.08)', borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(204,255,0,0.2)', justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 16, color: '#FFFFFF', fontFamily: FONT.bold, fontWeight: '700' },
+  statusIndicatorRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 1 },
+  statusGreenDot: { width: 6, height: 6, backgroundColor: C.grn, borderRadius: 3 },
+  statusSubtext: { fontSize: 11, color: C.mt, fontFamily: FONT.regular },
+  scrollBody: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 24 },
+  dateLabelMarker: { textAlign: 'center', fontSize: 11, color: 'rgba(142, 155, 174, 0.4)', fontFamily: FONT.medium, marginVertical: 14, textTransform: 'uppercase', letterSpacing: 1 },
+  msgRow: { flexDirection: 'row', width: '100%', marginBottom: 12 },
+  msgRowUser: { justifyContent: 'flex-end' },
+  msgRowAssistant: { justifyContent: 'flex-start' },
+  chatBubble: { maxWidth: '82%', borderRadius: 18, paddingHorizontal: 15, paddingVertical: 11, alignItems: 'flex-start' },
+  bubbleUser: { backgroundColor: C.cyan, borderBottomRightRadius: 4 },
+  bubbleAssistant: { backgroundColor: C.sur, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: C.bd },
+  bubbleText: { fontSize: 14, fontFamily: FONT.medium, lineHeight: 20, textAlign: 'left' },
+  timestampLabel: { fontSize: 9, fontFamily: FONT.regular, alignSelf: 'flex-end', marginTop: 4 },
+  inputTrayBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#0D1317', borderTopWidth: 1, borderTopColor: 'rgba(42, 59, 71, 0.50)', gap: 10 },
+  inputBox: { flex: 1, height: 48, backgroundColor: '#1A242B', borderRadius: 24, borderWidth: 1, borderColor: '#2A3B47', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 10 },
+  textInput: { flex: 1, color: '#FFFFFF', fontSize: 14, fontFamily: FONT.medium, height: '100%' },
+  sendButton: { width: 48, height: 48, backgroundColor: C.volt, borderRadius: 24, justifyContent: 'center', alignItems: 'center', ...CARD_SHADOW }
 });

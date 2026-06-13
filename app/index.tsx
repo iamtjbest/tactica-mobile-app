@@ -1,14 +1,17 @@
-import React from "react";
-import { View, Text, StyleSheet, Dimensions, SafeAreaView, TouchableOpacity } from "react-native";
+import React, { useEffect } from "react";
+import { View, Text, StyleSheet, Dimensions, SafeAreaView } from "react-native";
 import { router } from "expo-router";
 
-export const FirstScreen = (): JSX.Element => {
+export const FirstScreen = () => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace("/(auth)/sign-in");
+    }, 7000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <TouchableOpacity 
-      style={styles.container} 
-      activeOpacity={1} 
-      onPress={() => router.push("/(auth)/sign-in")}
-    >
+    <View style={styles.container}>
       {/* Top Left Corner guide */}
       <View style={styles.topLeftCorner}>
         <View style={styles.cornerHorizontal} />
@@ -43,7 +46,7 @@ export const FirstScreen = (): JSX.Element => {
         <Text style={styles.footerText}>POWERED BY AI · BUILT FOR THE GAME</Text>
         <Text style={styles.versionText}>Version 1.0.0</Text>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 

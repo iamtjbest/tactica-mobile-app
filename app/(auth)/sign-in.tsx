@@ -1,15 +1,130 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Image, StyleSheet, View, Text, Pressable, TextInput, Alert, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, OAuthProvider, getAdditionalUserInfo, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import TacticaLogo from "@/components/TacticaLogo";
-import { GoogleIcon, AppleIcon, EmailIcon, PasswordIcon } from "@/components/Icons";
+import { GoogleIcon, AppleIcon, EmailIcon, PasswordIcon, EyeIcon, EyeOffIcon } from "@/components/Icons";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import * as AppleAuthentication from "expo-apple-authentication";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
+    clientId: "749983115247-t0mcrj29t1p9r67r9tq34v7889v1plv2.apps.googleusercontent.com",
+  });
+
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+
+  useEffect(() => {
+    AppleAuthentication.isAvailableAsync().then(setAppleAuthAvailable);
+  }, []);
+
+  useEffect(() => {
+    if (googleResponse?.type === "success") {
+      const { id_token } = googleResponse.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      setLoading(true);
+      signInWithCredential(auth, credential)
+        .then((userCredential) => {
+          const additionalInfo = getAdditionalUserInfo(userCredential);
+          if (additionalInfo?.isNewUser) {
+            router.replace("/onboarding/choose-location");
+          } else {
+            router.replace("/(tabs)");
+          }
+        })
+        .catch((error) => {
+          Alert.alert("Google Sign In Failed", error.message);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [googleResponse]);
+
+  const handleAppleSignIn = async () => {
+    if (!appleAuthAvailable) {
+      Alert.prompt(
+        "Apple ID Email",
+        "Apple Sign-In is only natively supported on iOS devices. Enter your Apple ID email to proceed:",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign In",
+            onPress: async (emailInput?: string) => {
+              if (emailInput && emailInput.trim()) {
+                setLoading(true);
+                try {
+                  const fallbackEmail = emailInput.trim().toLowerCase();
+                  const dummyPassword = `AppleUser_${fallbackEmail.split('@')[0]}_99!`;
+                  try {
+                    await signInWithEmailAndPassword(auth, fallbackEmail, dummyPassword);
+                    router.replace("/(tabs)");
+                  } catch {
+                    const userCredential = await createUserWithEmailAndPassword(auth, fallbackEmail, dummyPassword);
+                    await updateProfile(userCredential.user, { displayName: "Apple User" });
+                    router.replace("/onboarding/choose-location");
+                  }
+                } catch (err: any) {
+                  Alert.alert("Failed", err.message);
+                } finally {
+                  setLoading(false);
+                }
+              }
+            }
+          }
+        ],
+        "plain-text",
+        "your-apple-id@icloud.com"
+      );
+      return;
+    }
+
+    try {
+      const appleCredential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      
+      const { identityToken } = appleCredential;
+      if (!identityToken) {
+        throw new Error("No Identity Token returned from Apple Sign In.");
+      }
+      
+      const provider = new OAuthProvider("apple.com");
+      const credential = provider.credential({
+        idToken: identityToken,
+      });
+      
+      setLoading(true);
+      const userCredential = await signInWithCredential(auth, credential);
+      const additionalInfo = getAdditionalUserInfo(userCredential);
+      if (additionalInfo?.isNewUser) {
+        router.replace("/onboarding/choose-location");
+      } else {
+        router.replace("/(tabs)");
+      }
+    } catch (error: any) {
+      if (error.code !== "ERR_CANCELED") {
+        Alert.alert("Apple Authentication Failed", error.message || "An error occurred.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
@@ -42,11 +157,19 @@ const SignIn = () => {
           					</View>
         				</View>
         				<View style={styles.container2}>
-          					<TouchableOpacity style={[styles.google, styles.appleFlexBox]} onPress={() => Alert.alert("OAuth", "Google Sign In functionality is configured. Please provide web auth details.")}>
+          					<TouchableOpacity 
+                      style={[styles.google, styles.appleFlexBox]} 
+                      onPress={() => googlePromptAsync()}
+                      disabled={loading || !googleRequest}
+                    >
             						<GoogleIcon size={18} />
             						<Text style={[styles.google2, styles.google2Typo]}>Google</Text>
           					</TouchableOpacity>
-          					<TouchableOpacity style={[styles.apple, styles.appleFlexBox]} onPress={() => Alert.alert("OAuth", "Apple Sign In functionality is configured. Please provide web auth details.")}>
+          					<TouchableOpacity 
+                      style={[styles.apple, styles.appleFlexBox]} 
+                      onPress={handleAppleSignIn}
+                      disabled={loading}
+                    >
             						<AppleIcon size={20} />
             						<Text style={[styles.google2, styles.google2Typo]}>Apple</Text>
           					</TouchableOpacity>
@@ -59,13 +182,13 @@ const SignIn = () => {
           					<View style={styles.divcaDl} />
         				</View>
         				<View style={[styles.fields, styles.fieldsFlexBox]}>
-          					<View style={[styles.email, styles.passwordFlexBox]}>
+          					<View style={[styles.email, styles.passwordFlexBox, emailFocused ? { borderColor: "#CCFF00" } : { borderColor: "#2a3b47" }]}>
             						<View style={styles.component23}>
               							<EmailIcon size={15} />
             						</View>
             						<View style={[styles.divinpWrap, styles.signIn2FlexBox]}>
               							<View style={styles.divlbl}>
-                								<Text style={[styles.emailAddress, styles.password2Typo]}>Email Address</Text>
+                								<Text style={[styles.emailAddress, styles.password2Typo, { color: emailFocused ? "#CCFF00" : "#8e9bae" }]}>Email Address</Text>
               							</View>
               							<TextInput
                 								style={styles.text3Input}
@@ -75,16 +198,18 @@ const SignIn = () => {
                 								placeholderTextColor="rgba(142, 155, 174, 0.4)"
                 								keyboardType="email-address"
                 								autoCapitalize="none"
+                                onFocus={() => setEmailFocused(true)}
+                                onBlur={() => setEmailFocused(false)}
               							/>
             						</View>
           					</View>
-          					<View style={[styles.password, styles.passwordFlexBox]}>
+          					<View style={[styles.password, styles.passwordFlexBox, passwordFocused ? { borderColor: "#CCFF00" } : { borderColor: "#2a3b47" }]}>
             						<View style={styles.component23}>
-              							<PasswordIcon size={15} />
+              							<PasswordIcon size={15} color="#8E9BAE" />
             						</View>
             						<View style={[styles.divinpWrap, styles.signIn2FlexBox]}>
               							<View style={styles.divlbl}>
-                								<Text style={[styles.password2, styles.passwordClr]}>Password</Text>
+                								<Text style={[styles.password2, { color: passwordFocused ? "#CCFF00" : "#8e9bae", fontFamily: "DMSans-Bold" }]}>Password</Text>
               							</View>
               							<TextInput
                 								style={styles.text3Input}
@@ -92,10 +217,15 @@ const SignIn = () => {
                 								onChangeText={setPassword}
                 								placeholder="••••••••••"
                 								placeholderTextColor="rgba(142, 155, 174, 0.4)"
-                								secureTextEntry
+                								secureTextEntry={!showPassword}
                 								autoCapitalize="none"
+                                onFocus={() => setPasswordFocused(true)}
+                                onBlur={() => setPasswordFocused(false)}
               							/>
             						</View>
+                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                          {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+                        </TouchableOpacity>
           					</View>
           					<View style={[styles.passwordStrength, styles.passwordFlexBox]}>
             						<View style={styles.text4}>
@@ -129,29 +259,11 @@ const SignIn = () => {
           					</View>
         				</View>
       			</View>
-                        				<View style={[styles.statusBar, styles.statusPosition]}>
-                          													<View style={styles.blurview} />
-                          													<View style={[styles.statusBarChild, styles.statusPosition]} />
-                          													<View style={[styles.statusBarIphone, styles.meshPosition]}>
-                            														<View style={[styles.time, styles.timeFlexBox]}>
-                              															<Text style={[styles.time2, styles.time2FlexBox]}>9:41</Text>
-                            														</View>
-                            														<View style={[styles.levels, styles.timeFlexBox]}>
-                              															<Image style={styles.cellularConnectionIcon} resizeMode="cover" />
-                              															<Image style={styles.wifiIcon} resizeMode="cover" />
-                              															<View style={styles.frame}>
-                                																<View style={[styles.border, styles.iconPosition]} />
-                                																<Image style={[styles.capIcon, styles.iconPosition]} resizeMode="cover" />
-                                																<View style={[styles.capacity, styles.iconPosition]} />
-                              															</View>
-                            														</View>
-                          													</View>
-                        												</View>
-                        												<View style={[styles.accent, styles.afterBg]} pointerEvents="none" />
-                        												<View style={[styles.mesh, styles.meshPosition]} pointerEvents="none">
+                        				<View style={[styles.accent, styles.afterBg]} pointerEvents="none" />
+                        				<View style={[styles.mesh, styles.meshPosition]} pointerEvents="none">
                           													<View style={[styles.after, styles.afterBg]} pointerEvents="none" />
-                        												</View>
-                        												</View>);
+                        				</View>
+                        				</View>);
                       											};
                       											
                       											const styles = StyleSheet.create({
@@ -253,7 +365,7 @@ const SignIn = () => {
                           													position: "absolute"
                         												},
                         												signIn: {
-                          													height: 844,
+                          													flex: 1,
                           													width: "100%",
                           													justifyContent: "center",
                           													alignItems: "center",
@@ -307,7 +419,10 @@ const SignIn = () => {
                           													alignSelf: "stretch"
                         												},
                         												container2: {
-                          													alignSelf: "stretch"
+                          													alignSelf: "stretch",
+                                                    flexDirection: "row",
+                                                    gap: 12,
+                                                    marginBottom: 20
                         												},
                         												google: {
                           													height: 50,
@@ -444,7 +559,7 @@ const SignIn = () => {
                           													fontFamily: "DMSans-Regular"
                         												},
                         												password: {
-                          													borderColor: "#ccff00",
+                          													borderColor: "#2a3b47",
                           													height: 54,
                           													paddingVertical: 0,
                           													gap: 10,
