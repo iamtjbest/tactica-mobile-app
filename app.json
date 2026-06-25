@@ -1,37 +1,30 @@
 {
   "expo": {
     "name": "Tactica",
-    "slug": "tactica",
+    "slug": "tactica-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#050d07",
     "splash": {
-      "backgroundColor": "#050d07",
-      "resizeMode": "contain"
+      "backgroundColor": "#0D1317"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.tactica.app"
+      "bundleIdentifier": "com.lineafootball.tactica"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#050d07"
+        "backgroundColor": "#0D1317"
       },
-      "package": "com.tactica.app"
+      "package": "com.lineafootball.tactica"
+    },
+    "extra": {
+      "apiUrl": "https://tactica-backend-hdbd.onrender.com"
     },
     "plugins": [
       "expo-router",
-      "expo-asset",
-      "expo-web-browser"
-    ],
-    "scheme": "tactica",
-    "extra": {
-      "apiUrl": "https://tactica-backend-hdbd.onrender.com"
-    }
+      "expo-font"
+    ]
   }
 }
