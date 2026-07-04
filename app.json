@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Tactica",
-    "slug": "tactica",
+    "slug": "tactica-mobile",
     "scheme": "tactica",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,7 +12,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.lineafootball.tactica"
+      "bundleIdentifier": "com.lineafootball.tactica",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +27,7 @@
       "apiUrl": "https://tactica-backend-hdbd.onrender.com",
       "router": {},
       "eas": {
-        "projectId": "18a3e6ed-2f39-4287-9861-2e8847b9454f"
+        "projectId": "8c638880-452c-4962-bbad-8c7da231682c"
       }
     },
     "plugins": [
