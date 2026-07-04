@@ -75,7 +75,7 @@ export default function LegalTermsScreen() {
                     </View>
                     <View style={styles.brandMetadataTexts}>
                         <Text style={styles.t10ln}>Tactica</Text>
-                        <Text style={styles.t10ls}>by Ethereum Football</Text>
+                        <Text style={styles.t10ls}>by Linea Football</Text>
                     </View>
                 </View>
 
@@ -127,7 +127,7 @@ export default function LegalTermsScreen() {
                                 <Text style={styles.clauseTitleLabel}>Intellectual Property</Text>
                             </View>
                             <Text style={styles.t10bd2}>
-                                The Tactica name, logo, and <Text style={styles.boldWhiteText}>Ethereum Football (EF)</Text> brand are proprietary. All rights reserved.
+                                The Tactica name, logo, and <Text style={styles.boldWhiteText}>Linea Football</Text> brand are proprietary. All rights reserved.
                             </Text>
                         </View>
                     </View>
@@ -155,7 +155,7 @@ export default function LegalTermsScreen() {
                     </View>
                 )}
 
-                <Text style={styles.t10lup}>Last updated: 28 May 2026 · Ethereum Football</Text>
+                <Text style={styles.t10lup}>Last updated: 28 May 2026 · Linea Football</Text>
             </ScrollView>
 
             {/* STICKY INTERACTIVE BOTTOM ACCEPTANCE UNIT CARD */}

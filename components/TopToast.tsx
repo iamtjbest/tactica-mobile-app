@@ -57,7 +57,7 @@ export const TopToast = ({ visible, message, type = "info", onClose }: TopToastP
                     </View>
                     <View style={styles.textBlock}>
                         <Text style={[styles.titleText, { color: getAccentColor() }]}>
-                            {type === "success" ? "Notifications Enabled" : type === "error" ? "System Error" : "New Code Sent"}
+                            {type === "success" ? "Success" : type === "error" ? "Error" : "Info"}
                         </Text>
                         <Text style={styles.toastText} numberOfLines={2}>{message}</Text>
                     </View>

@@ -1,5 +1,6 @@
 import { useState, type ReactElement } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LeagueSelectionListSection } from "./LeagueSelectionListSection";
 import { SelectionHeaderSection } from "./SelectionHeaderSection";
 import { router, useLocalSearchParams } from "expo-router";

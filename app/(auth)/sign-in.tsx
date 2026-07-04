@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Image, StyleSheet, View, Text, Pressable, TextInput, Alert, TouchableOpacity } from "react-native";
+import { Image, StyleSheet, View, Text, Pressable, TextInput, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential, OAuthProvider, getAdditionalUserInfo, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import TacticaLogo from "@/components/TacticaLogo";
 import { GoogleIcon, AppleIcon, EmailIcon, PasswordIcon, EyeIcon, EyeOffIcon } from "@/components/Icons";
+import { TopToast } from "@/components/TopToast";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -16,6 +17,9 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "info" | "error">("info");
   
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -45,7 +49,9 @@ const SignIn = () => {
           }
         })
         .catch((error) => {
-          Alert.alert("Google Sign In Failed", error.message);
+          setToastMessage(error.message || "Google sign in failed");
+          setToastType("error");
+          setToastVisible(true);
         })
         .finally(() => {
           setLoading(false);
@@ -77,7 +83,9 @@ const SignIn = () => {
                     router.replace("/onboarding/choose-location");
                   }
                 } catch (err: any) {
-                  Alert.alert("Failed", err.message);
+                  setToastMessage(err.message || "Apple sign in failed");
+                  setToastType("error");
+                  setToastVisible(true);
                 } finally {
                   setLoading(false);
                 }
@@ -119,7 +127,9 @@ const SignIn = () => {
       }
     } catch (error: any) {
       if (error.code !== "ERR_CANCELED") {
-        Alert.alert("Apple Authentication Failed", error.message || "An error occurred.");
+        setToastMessage(error.message || "Apple authentication failed");
+        setToastType("error");
+        setToastVisible(true);
       }
     } finally {
       setLoading(false);
@@ -128,7 +138,9 @@ const SignIn = () => {
 
   const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter both email and password.");
+      setToastMessage("Please enter both email and password.");
+      setToastType("error");
+      setToastVisible(true);
       return;
     }
     setLoading(true);
@@ -136,7 +148,9 @@ const SignIn = () => {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       router.replace("/(tabs)");
     } catch (error: any) {
-      Alert.alert("Sign In Failed", error.message || "An error occurred.");
+      setToastMessage(error.message || "Sign in failed.");
+      setToastType("error");
+      setToastVisible(true);
     } finally {
       setLoading(false);
     }
@@ -263,6 +277,12 @@ const SignIn = () => {
                         				<View style={[styles.mesh, styles.meshPosition]} pointerEvents="none">
                           													<View style={[styles.after, styles.afterBg]} pointerEvents="none" />
                         				</View>
+      <TopToast 
+        visible={toastVisible} 
+        message={toastMessage} 
+        type={toastType}
+        onClose={() => setToastVisible(false)} 
+      />
                         				</View>);
                       											};
                       											

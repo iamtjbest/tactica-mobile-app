@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { StyleSheet, View, Pressable, Text, TouchableOpacity, TextInput, Keyboard, Alert } from "react-native";
+import { StyleSheet, View, Pressable, Text, TouchableOpacity, TextInput, Keyboard, ActivityIndicator } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { doc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
 import { Ionicons } from "@expo/vector-icons";
+import { TopToast } from "@/components/TopToast";
 
 const VerifyEmail = () => {
 	const params = useLocalSearchParams();
@@ -20,6 +21,9 @@ const VerifyEmail = () => {
 	const [inputFocused, setInputFocused] = useState(false);
 	const inputRef = useRef<TextInput>(null);
 	const [secondsLeft, setSecondsLeft] = useState(600); // 10 minutes
+	const [toastVisible, setToastVisible] = useState(false);
+	const [toastMessage, setToastMessage] = useState("");
+	const [toastType, setToastType] = useState<"success" | "info" | "error">("info");
 
 	// Force Keyboard Engagement Hook
 	useEffect(() => {
@@ -47,7 +51,9 @@ const VerifyEmail = () => {
 
 	const handleVerifyOTP = async () => {
 		if (code.length !== 6) {
-			Alert.alert("Error", "Please enter a 6-digit validation code.");
+			setToastMessage("Please enter a 6-digit validation code.");
+			setToastType("error");
+			setToastVisible(true);
 			return;
 		}
 
@@ -86,17 +92,25 @@ const VerifyEmail = () => {
 				createdAt: new Date().toISOString()
 			});
 
-			Alert.alert("Account Verified!", "Your Tactica registration is complete.");
-			router.replace("/(tabs)");
+			setToastMessage("Account verified successfully!");
+			setToastType("success");
+			setToastVisible(true);
+			
+			setTimeout(() => {
+				router.replace("/(tabs)");
+			}, 1500);
 
 		} catch (error: any) {
-			Alert.alert("Verification Failed", error.message);
+			setToastMessage(error.message || "Verification failed.");
+			setToastType("error");
+			setToastVisible(true);
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	return (
+		<>
 		<View style={styles.verifyEmail}>
 			<View style={styles.container}>
 				<View style={styles.back}>
@@ -192,7 +206,14 @@ const VerifyEmail = () => {
 					</Pressable>
 				</View>
 			</View>
+			<TopToast 
+				visible={toastVisible} 
+				message={toastMessage} 
+				type={toastType}
+				onClose={() => setToastVisible(false)} 
+			/>
 		</View>
+		</>
 	);
 };
 

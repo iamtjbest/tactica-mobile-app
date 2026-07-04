@@ -1,5 +1,6 @@
 import React, { useMemo, useState, type ReactElement } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { SearchIcon } from "@/components/Icons";
 import * as Location from "expo-location";

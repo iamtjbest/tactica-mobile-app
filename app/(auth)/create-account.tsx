@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Pressable } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, OAuthProvider, getAdditionalUserInfo, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
@@ -8,6 +9,8 @@ import { GoogleIcon, AppleIcon, EmailIcon, PasswordIcon, EyeIcon, EyeOffIcon } f
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { TopToast } from "@/components/TopToast";
+import { C } from "@/constants/theme";
 
 // Native Carrier-Optimized EmailJS SDK Injection
 import emailjs from '@emailjs/react-native';
@@ -52,6 +55,10 @@ const CreateAccount = () => {
   const [lastNameFocused, setLastNameFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "info" | "error">("info");
 
   const [googleRequest, googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
     clientId: "749983115247-t0mcrj29t1p9r67r9tq34v7889v1plv2.apps.googleusercontent.com",
@@ -78,7 +85,9 @@ const CreateAccount = () => {
           }
         })
         .catch((error) => {
-          Alert.alert("Google Sign In Failed", error.message);
+          setToastMessage(error.message || "Google sign in failed");
+          setToastType("error");
+          setToastVisible(true);
         })
         .finally(() => {
           setLoading(false);
@@ -110,7 +119,9 @@ const CreateAccount = () => {
                     router.replace("/onboarding/choose-location");
                   }
                 } catch (err: any) {
-                  Alert.alert("Failed", err.message);
+                  setToastMessage(err.message || "Apple sign in failed");
+                  setToastType("error");
+                  setToastVisible(true);
                 } finally {
                   setLoading(false);
                 }
@@ -152,7 +163,9 @@ const CreateAccount = () => {
       }
     } catch (error: any) {
       if (error.code !== "ERR_CANCELED") {
-        Alert.alert("Apple Authentication Failed", error.message || "An error occurred.");
+        setToastMessage(error.message || "Apple authentication failed");
+        setToastType("error");
+        setToastVisible(true);
       }
     } finally {
       setLoading(false);
@@ -161,7 +174,9 @@ const CreateAccount = () => {
 
   const handleRegister = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please fill in all fields.");
+      setToastMessage("Please fill in all fields.");
+      setToastType("error");
+      setToastVisible(true);
       return;
     }
 
@@ -181,7 +196,9 @@ const CreateAccount = () => {
         console.log("Firestore write successful!");
       } catch (dbError: any) {
         console.log("🔴 Firestore Blocked Write:", dbError);
-        Alert.alert("Database Error", "Firestore connection failed. Please verify your collection rules context.");
+        setToastMessage("Firestore connection failed. Please verify your collection rules.");
+        setToastType("error");
+        setToastVisible(true);
         setLoading(false);
         return;
       }
@@ -203,22 +220,28 @@ const CreateAccount = () => {
       );
 
       console.log("🚀 Native SDK request cleared carrier checks successfully!");
-      Alert.alert("Verification Sent", "Check your email for your 6-digit registration code.");
+      setToastMessage("Verification code sent to your email.");
+      setToastType("success");
+      setToastVisible(true);
 
-      router.push({
-        pathname: '/verify-email',
-        params: {
-          email: targetEmail,
-          password: password,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          flowType: 'signup'
-        }
-      });
+      setTimeout(() => {
+        router.push({
+          pathname: '/verify-email',
+          params: {
+            email: targetEmail,
+            password: password,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            flowType: 'signup'
+          }
+        });
+      }, 1500);
 
     } catch (error: any) {
       console.log("Caught handling execution fault:", error);
-      Alert.alert("Signup Failed", error.message || "An unresolved execution fault occurred.");
+      setToastMessage(error.message || "Signup failed. Please try again.");
+      setToastType("error");
+      setToastVisible(true);
     } finally {
       setLoading(false);
     }
@@ -377,6 +400,12 @@ const CreateAccount = () => {
           </View>
         </View>
       </ScrollView>
+      <TopToast 
+        visible={toastVisible} 
+        message={toastMessage} 
+        type={toastType}
+        onClose={() => setToastVisible(false)} 
+      />
     </SafeAreaView>
   );
 };

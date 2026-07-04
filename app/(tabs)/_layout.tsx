@@ -6,7 +6,7 @@ import { HomeIcon, PitchIcon, ChatIcon, ProfileIcon } from "@/components/Icons";
 const TABS = [
   { name: "index",    label: "Home",    Icon: HomeIcon },
   { name: "scout",    label: "Engine",  Icon: PitchIcon },
-  { name: "ai-chat",  label: "AI Chat", Icon: ChatIcon },
+  { name: "ai-chat",  label: "AIChat", Icon: ChatIcon },
   { name: "profile",  label: "Profile", Icon: ProfileIcon },
 ] as const;
 
@@ -46,7 +46,7 @@ export default function TabLayout() {
                   flexDirection: 'column',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  gap: 3,
+                  gap: 4,
                   height: 48,
                 }}>
                   <View style={{ width: 21, height: 21, justifyContent: 'center', alignItems: 'center' }}>

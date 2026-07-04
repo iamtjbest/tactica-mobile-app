@@ -25,6 +25,7 @@ export interface Match {
   conceded: number;
   result: "W" | "D" | "L";
   formation: string;
+  date?: string;
 }
 
 export interface FormResponse {
@@ -95,12 +96,36 @@ export interface MatchDetailsResponse {
   possession: { home: number; away: number };
   shots: { home: number; away: number };
   passes: { home: number; away: number };
-  events: Array<{
-    minute: string;
-    type: string;
-    team: string;
-    player: string;
-  }>;
+  events: Array<{ minute: string; type: string; team: string; player: string }>;
+}
+
+// ── BSD-exact team name aliases ───────────────────────────────────────────────
+// The FastAPI /api/form uses difflib against BSD team names.
+// Some display names score below the cutoff — map them to BSD-exact names.
+
+const BSD_NAME_MAP: Record<string, string> = {
+  "Manchester Utd":      "Manchester United",
+  "Nott'm Forest":       "Nottingham Forest",
+  "Paris Saint-Germain": "Paris Saint-Germain",  // BSD stores this exactly
+  "Inter Milan":         "Inter",
+  "AC Milan":            "AC Milan",
+  "Atletico Madrid":     "Atletico Madrid",
+  "Bayern Munich":       "Bayern Munich",
+  "Borussia Dortmund":   "Borussia Dortmund",
+  "RB Leipzig":          "RB Leipzig",
+  "Eintracht Frankfurt": "Eintracht Frankfurt",
+  "VfB Stuttgart":       "Stuttgart",
+  "SC Freiburg":         "Freiburg",
+  "PSV Eindhoven":       "PSV",
+  "AZ Alkmaar":          "AZ",
+  "Sporting CP":         "Sporting CP",
+  "Slavia Prague":       "Slavia Prague",
+  "Sparta Prague":       "Sparta Prague",
+};
+
+/** Normalise a display name to the BSD-exact version the backend expects */
+export function bsdName(displayName: string): string {
+  return BSD_NAME_MAP[displayName] ?? displayName;
 }
 
 // ── Core fetch wrapper ────────────────────────────────────────────────────────
@@ -128,11 +153,11 @@ export const api = {
   health: () =>
     apiFetch<{ status: string }>("/api/health"),
 
-  // Auto-Tactics: get last 5 form + best formation for a single team
+  /** Auto-Tactics: form + best formation. Normalises team name to BSD spelling. */
   form: (team: string) =>
-    apiFetch<FormResponse>(`/api/form?team=${encodeURIComponent(team)}`),
+    apiFetch<FormResponse>(`/api/form?team=${encodeURIComponent(bsdName(team))}`),
 
-  // Opponent Analysis: head-to-head prediction
+  /** Opponent Analysis / Sandbox: win probability prediction. */
   predict: (b: {
     my_team: string;
     opp_team: string;
@@ -142,26 +167,34 @@ export const api = {
     opp_def?: number;
     familiarity_formation?: string;
     opp_habit_formation?: string;
-  }) => apiFetch<PredictResponse>("/api/predict", { method: "POST", body: JSON.stringify(b) }),
+  }) =>
+    apiFetch<PredictResponse>("/api/predict", {
+      method: "POST",
+      body: JSON.stringify({
+        ...b,
+        my_team:  bsdName(b.my_team),
+        opp_team: bsdName(b.opp_team),
+      }),
+    }),
 
-  // Lineup builder: ML-powered XI for a team + formation
+  /** Lineup builder: best XI for a team + formation. */
   lineup: (team_name: string, formation: string) =>
     apiFetch<LineupResponse>("/api/lineup", {
       method: "POST",
-      body: JSON.stringify({ team_name, formation }),
+      body: JSON.stringify({ team_name: bsdName(team_name), formation }),
     }),
 
-  // Live Simulator: scoreline context for tactical advice
+  /** Live: scoreline context. */
   live: (home: string, away: string) =>
     apiFetch<LiveResponse>(
-      `/api/live?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`
+      `/api/live?home=${encodeURIComponent(bsdName(home))}&away=${encodeURIComponent(bsdName(away))}`
     ),
 
-  // Squad fetch: pre-warms backend cache before analysis
+  /** Squad: pre-warms backend cache. */
   squad: (team: string) =>
-    apiFetch<SquadResponse>(`/api/squad?team=${encodeURIComponent(team)}`),
+    apiFetch<SquadResponse>(`/api/squad?team=${encodeURIComponent(bsdName(team))}`),
 
-  // AI Chat: Gemini tactical assistant
+  /** AI Chat: Gemini tactical assistant. */
   chat: (b: {
     my_team: string;
     opp_team: string;
@@ -169,16 +202,23 @@ export const api = {
     history: ChatMessage[];
     live_context?: string;
     squad?: SquadPlayer[];
-  }) => apiFetch<{ reply: string }>("/api/chat", { method: "POST", body: JSON.stringify(b) }),
+  }) =>
+    apiFetch<{ reply: string }>("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        ...b,
+        my_team:  bsdName(b.my_team),
+        opp_team: bsdName(b.opp_team),
+      }),
+    }),
 
-  // Match details (for Matchday Center recent scans drill-down)
   matchDetails: (id: string) =>
     apiFetch<MatchDetailsResponse>(`/api/matches/${id}`),
 };
 
-// ── Team Lists ────────────────────────────────────────────────────────────────
+// ── Club teams (display names — bsdName() normalises before API calls) ────────
 
-export const CLUB_TEAMS = [
+export const CLUB_TEAMS: string[] = [
   // Premier League
   "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton",
   "Chelsea", "Crystal Palace", "Everton", "Fulham", "Ipswich",
@@ -188,22 +228,30 @@ export const CLUB_TEAMS = [
   "Real Madrid", "Barcelona", "Atletico Madrid", "Athletic Club", "Real Sociedad",
   "Real Betis", "Villarreal", "Valencia", "Sevilla", "Girona",
   "Osasuna", "Getafe", "Rayo Vallecano", "Mallorca", "Celta Vigo",
+  "Alaves", "Leganes", "Espanyol",
   // Bundesliga
   "Bayern Munich", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig",
   "Eintracht Frankfurt", "VfB Stuttgart", "SC Freiburg", "Union Berlin",
   "Werder Bremen", "Augsburg", "Wolfsburg", "Hoffenheim", "Mainz", "St Pauli",
+  "Borussia Monchengladbach",
   // Serie A
   "Inter Milan", "AC Milan", "Juventus", "Napoli", "Atalanta",
-  "AS Roma", "Lazio", "Fiorentina", "Bologna", "Torino", "Udinese", "Genoa",
+  "AS Roma", "Lazio", "Fiorentina", "Bologna", "Torino",
+  "Udinese", "Genoa", "Cagliari", "Empoli", "Lecce", "Monza",
   // Ligue 1
   "Paris Saint-Germain", "Monaco", "Marseille", "Lyon", "Lille",
-  "Lens", "Nice", "Rennes", "Brest",
+  "Lens", "Nice", "Rennes", "Brest", "Reims", "Strasbourg", "Toulouse",
   // Eredivisie
   "Ajax", "PSV Eindhoven", "Feyenoord", "AZ Alkmaar", "FC Utrecht", "FC Twente",
   // Primeira Liga
   "Benfica", "Porto", "Sporting CP", "Braga",
   // Others
-  "Celtic", "Rangers", "Club Brugge", "Anderlecht", "Genk",
+  "Celtic", "Rangers",
+  "Club Brugge", "Anderlecht", "Genk",
   "Galatasaray", "Fenerbahce", "Besiktas", "Trabzonspor",
   "Red Bull Salzburg", "Slavia Prague", "Sparta Prague",
+  "Olympiakos", "PAOK",
 ].sort();
+
+// Alias for backwards compatibility
+export const EUROPEAN_TEAMS = CLUB_TEAMS;

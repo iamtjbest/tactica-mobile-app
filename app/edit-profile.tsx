@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, Pressable, ScrollView, ActivityIndicator } from "react-native";
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Pressable, ScrollView, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { C } from "@/constants/theme";
 import { auth } from "@/lib/firebase";
 import { updateProfile } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TopToast } from "@/components/TopToast";
 
 const EditProfile = () => {
     const [firstName, setFirstName] = useState("Tj");
@@ -16,6 +17,9 @@ const EditProfile = () => {
     const [phone, setPhone] = useState("");
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    const [toastVisible, setToastVisible] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastType, setToastType] = useState<"success" | "info" | "error">("info");
 
     // Seed data inputs straight from current live session profiles on mount
     useEffect(() => {
@@ -40,7 +44,9 @@ const EditProfile = () => {
 
     const handleSave = async () => {
         if (!firstName.trim() || !lastName.trim()) {
-            Alert.alert("Invalid Input", "First and Last name data parameters cannot be blank.");
+            setToastMessage("First and Last name cannot be blank.");
+            setToastType("error");
+            setToastVisible(true);
             return;
         }
 
@@ -58,10 +64,14 @@ const EditProfile = () => {
             // 2. Persist custom username token locally to disk storage nodes
             await AsyncStorage.setItem("@custom_username", username.trim());
 
-            Alert.alert("Success", "Profile data compiled and synced safely.");
-            router.back();
+            setToastMessage("Profile updated successfully.");
+            setToastType("success");
+            setToastVisible(true);
+            setTimeout(() => router.back(), 2000);
         } catch (error: any) {
-            Alert.alert("Sync Fault", error.message || "Could not push update parameters.");
+            setToastMessage(error.message || "Could not update profile.");
+            setToastType("error");
+            setToastVisible(true);
         } finally {
             setSaving(false);
         }
@@ -141,6 +151,12 @@ const EditProfile = () => {
                     {renderField("Phone (optional)", phone, setPhone, "phone", "+234 · Your number")}
                 </View>
             </ScrollView>
+            <TopToast 
+                visible={toastVisible} 
+                message={toastMessage} 
+                type={toastType}
+                onClose={() => setToastVisible(false)} 
+            />
         </View>
     );
 };

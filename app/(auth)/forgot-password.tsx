@@ -1,20 +1,26 @@
 import React, { useState } from "react";
-import { StyleSheet, View, Text, Pressable, TextInput, TouchableOpacity, Alert } from "react-native";
+import { StyleSheet, View, Text, Pressable, TextInput, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 // Core Backend Security Infrastructure
 import { auth } from "@/lib/firebase";
 import { sendPasswordResetEmail } from "firebase/auth";
+import { TopToast } from "@/components/TopToast";
 
 const ForgotPassword = () => {
 	const [email, setEmail] = useState("");
 	const [emailFocused, setEmailFocused] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [toastVisible, setToastVisible] = useState(false);
+	const [toastMessage, setToastMessage] = useState("");
+	const [toastType, setToastType] = useState<"success" | "info" | "error">("info");
 
 	const handleSendResetEmail = async () => {
 		if (!email.trim()) {
-			Alert.alert("Error", "Please enter your email.");
+			setToastMessage("Please enter your email.");
+			setToastType("error");
+			setToastVisible(true);
 			return;
 		}
 
@@ -25,100 +31,112 @@ const ForgotPassword = () => {
 			// Fire the native Firebase security link dispatcher directly
 			await sendPasswordResetEmail(auth, targetEmail);
 
-			Alert.alert(
-				"Link Sent! 🚀",
-				"A secure password reset link has been sent to your inbox. Use it to safely update your credentials.",
-				[{ text: "OK", onPress: () => router.replace("/(auth)/sign-in") }]
-			);
+			setToastMessage("Password reset link sent to your email.");
+			setToastType("success");
+			setToastVisible(true);
+
+			setTimeout(() => {
+				router.replace("/(auth)/sign-in");
+			}, 2000);
 
 		} catch (error: any) {
 			console.log("🔴 Reset Email Request Failed:", error);
-			Alert.alert("Reset Failed", error.message || "An unexpected error occurred.");
+			setToastMessage(error.message || "Reset failed. Please try again.");
+			setToastType("error");
+			setToastVisible(true);
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	return (
-		<View style={[styles.forgotPassword, styles.container4Layout]}>
-			<View style={styles.container}>
-				<View style={styles.back}>
-					<Pressable style={[styles.container2, styles.containerBorder]} onPress={() => router.back()}>
-						<Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-					</Pressable>
-				</View>
-				<View style={styles.icon}>
-					<View style={[styles.container3, styles.containerBorder]}>
-						<Ionicons name="lock-closed-outline" size={32} color="#00E5FF" />
-					</View>
-				</View>
-				<View style={styles.title}>
-					<View style={[styles.container4, styles.container4Layout]}>
-						<Text style={styles.resetYourPassword}>Reset Your{"\n"}Password</Text>
-					</View>
-				</View>
-				<View style={styles.subText}>
-					<View style={styles.title}>
-						<Text style={[styles.enterYourEmail, styles.text5Clr]}>
-							Enter your email address and we'll send you a secure{"\n"}reset link.
-						</Text>
-					</View>
-				</View>
-				<View style={styles.email}>
-					<View style={[styles.field, styles.fieldBorder, emailFocused ? { borderColor: "#ccff00" } : { borderColor: "#2a3b47" }]}>
-						<View style={styles.component23}>
-							<Ionicons name="mail-outline" size={16} color={emailFocused ? "#ccff00" : "#8E9BAE"} />
-						</View>
-						<View style={[styles.text, styles.textFlexBox]}>
-							<View style={styles.email}>
-								<Text style={[styles.emailAddress, styles.signIn3Typo, { color: emailFocused ? "#ccff00" : "#8e9bae" }]}>Email Address</Text>
-							</View>
-							<TextInput
-								style={styles.textInputStyle}
-								value={email}
-								onChangeText={setEmail}
-								placeholder="your@email.com"
-								placeholderTextColor="rgba(142, 155, 174, 0.4)"
-								keyboardType="email-address"
-								autoCapitalize="none"
-								onFocus={() => setEmailFocused(true)}
-								onBlur={() => setEmailFocused(false)}
-							/>
-						</View>
-					</View>
-				</View>
-				<View style={styles.info}>
-					<View style={[styles.container6, styles.fieldBorder]}>
-						<View style={styles.icon2}>
-							<Ionicons name="time-outline" size={16} color="#00E5FF" />
-						</View>
-						<View style={styles.text2}>
-							<Text style={styles.a6DigitCode}>
-								A secure link will open a validation window to overwrite your credentials safely.
-							</Text>
-						</View>
-					</View>
-				</View>
-				<View style={styles.buttons}>
-					<TouchableOpacity style={styles.sendCode} onPress={handleSendResetEmail} disabled={loading}>
-						<View style={[styles.text3, styles.textFlexBox]}>
-							<Text style={[styles.sendResetCode, styles.time2Typo]}>
-								{loading ? "Sending Link..." : "Send Reset Link"}
-							</Text>
-						</View>
-					</TouchableOpacity>
-					<View style={styles.signIn}>
-						<Text style={[styles.rememberedIt, styles.text5Clr]}>Remembered it?</Text>
-						<Pressable onPress={() => router.push("/(auth)/sign-in")}>
-							<Text style={styles.text4Typo}>
-								<Text style={styles.text5Clr}>{" "}</Text>
-								<Text style={styles.signIn3Typo}>Sign In</Text>
-							</Text>
+		<>
+			<View style={[styles.forgotPassword, styles.container4Layout]}>
+				<View style={styles.container}>
+					<View style={styles.back}>
+						<Pressable style={[styles.container2, styles.containerBorder]} onPress={() => router.back()}>
+							<Ionicons name="chevron-back" size={20} color="#FFFFFF" />
 						</Pressable>
+					</View>
+					<View style={styles.icon}>
+						<View style={[styles.container3, styles.containerBorder]}>
+							<Ionicons name="lock-closed-outline" size={32} color="#00E5FF" />
+						</View>
+					</View>
+					<View style={styles.title}>
+						<View style={[styles.container4, styles.container4Layout]}>
+							<Text style={styles.resetYourPassword}>Reset Your{"\n"}Password</Text>
+						</View>
+					</View>
+					<View style={styles.subText}>
+						<View style={styles.title}>
+							<Text style={[styles.enterYourEmail, styles.text5Clr]}>
+								Enter your email address and we'll send you a secure{"\n"}reset link.
+							</Text>
+						</View>
+					</View>
+					<View style={styles.email}>
+						<View style={[styles.field, styles.fieldBorder, emailFocused ? { borderColor: "#ccff00" } : { borderColor: "#2a3b47" }]}>
+							<View style={styles.component23}>
+								<Ionicons name="mail-outline" size={16} color={emailFocused ? "#ccff00" : "#8E9BAE"} />
+							</View>
+							<View style={[styles.text, styles.textFlexBox]}>
+								<View style={styles.email}>
+									<Text style={[styles.emailAddress, styles.signIn3Typo, { color: emailFocused ? "#ccff00" : "#8e9bae" }]}>Email Address</Text>
+								</View>
+								<TextInput
+									style={styles.textInputStyle}
+									value={email}
+									onChangeText={setEmail}
+									placeholder="your@email.com"
+									placeholderTextColor="rgba(142, 155, 174, 0.4)"
+									keyboardType="email-address"
+									autoCapitalize="none"
+									onFocus={() => setEmailFocused(true)}
+									onBlur={() => setEmailFocused(false)}
+								/>
+							</View>
+						</View>
+					</View>
+					<View style={styles.info}>
+						<View style={[styles.container6, styles.fieldBorder]}>
+							<View style={styles.icon2}>
+								<Ionicons name="time-outline" size={16} color="#00E5FF" />
+							</View>
+							<View style={styles.text2}>
+								<Text style={styles.a6DigitCode}>
+									A secure link will open a validation window to overwrite your credentials safely.
+								</Text>
+							</View>
+						</View>
+					</View>
+					<View style={styles.buttons}>
+						<TouchableOpacity style={styles.sendCode} onPress={handleSendResetEmail} disabled={loading}>
+							<View style={[styles.text3, styles.textFlexBox]}>
+								<Text style={[styles.sendResetCode, styles.time2Typo]}>
+									{loading ? "Sending Link..." : "Send Reset Link"}
+								</Text>
+							</View>
+						</TouchableOpacity>
+						<View style={styles.signIn}>
+							<Text style={[styles.rememberedIt, styles.text5Clr]}>Remembered it?</Text>
+							<Pressable onPress={() => router.push("/(auth)/sign-in")}>
+								<Text style={styles.text4Typo}>
+									<Text style={styles.text5Clr}>{" "}</Text>
+									<Text style={styles.signIn3Typo}>Sign In</Text>
+								</Text>
+							</Pressable>
+						</View>
 					</View>
 				</View>
 			</View>
-		</View>
+			<TopToast
+				visible={toastVisible}
+				message={toastMessage}
+				type={toastType}
+				onClose={() => setToastVisible(false)}
+			/>
+		</>
 	);
 };
 
