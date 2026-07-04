@@ -21,11 +21,16 @@
       "package": "com.lineafootball.tactica"
     },
     "extra": {
-      "apiUrl": "https://tactica-backend-hdbd.onrender.com"
+      "apiUrl": "https://tactica-backend-hdbd.onrender.com",
+      "router": {},
+      "eas": {
+        "projectId": "8c638880-452c-4962-bbad-8c7da231682c"
+      }
     },
     "plugins": [
       "expo-router",
       "expo-font"
-    ]
+    ],
+    "owner": "iamtjbest"
   }
 }
