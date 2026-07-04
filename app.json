@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Tactica",
-    "slug": "tactica-mobile",
+    "slug": "tactica",
     "scheme": "tactica",
     "version": "1.0.0",
     "orientation": "portrait",
