@@ -1,13 +1,14 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from "expo-router";
 import { View, Text } from "react-native";
-import { HomeIcon, PitchIcon, ChatIcon, ProfileIcon } from "@/components/Icons";
+import { HomeIcon, PitchIcon, ChatIcon, ProfileIcon, FplIcon } from "@/components/Icons";
 
 const TABS = [
-  { name: "index",    label: "Home",    Icon: HomeIcon },
-  { name: "scout",    label: "Engine",  Icon: PitchIcon },
-  { name: "ai-chat",  label: "AIChat", Icon: ChatIcon },
-  { name: "profile",  label: "Profile", Icon: ProfileIcon },
+  { name: "index",    label: "Home",    Icon: HomeIcon,    showLabel: true },
+  { name: "scout",    label: "Engine",  Icon: PitchIcon,   showLabel: true },
+  { name: "ai-chat",  label: "AIChat",  Icon: ChatIcon,    showLabel: true },
+  { name: "fpl",      label: "FPL",     Icon: FplIcon,     showLabel: false },  // Icon-only
+  { name: "profile",  label: "Profile", Icon: ProfileIcon, showLabel: true },
 ] as const;
 
 export default function TabLayout() {
@@ -31,7 +32,7 @@ export default function TabLayout() {
         tabBarShowLabel: false,
       }}
     >
-      {TABS.map(({ name, label, Icon }) => (
+      {TABS.map(({ name, label, Icon, showLabel }) => (
         <Tabs.Screen
           key={name}
           name={name}
@@ -46,22 +47,31 @@ export default function TabLayout() {
                   flexDirection: 'column',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: showLabel ? 4 : 2,
                   height: 48,
                 }}>
-                  <View style={{ width: 21, height: 21, justifyContent: 'center', alignItems: 'center' }}>
-                    <Icon size={21} color={color} />
-                  </View>
-                  <Text style={{
-                    color,
-                    fontSize: 10,
-                    fontFamily: 'DMSans-Medium',
-                    fontWeight: '600',
-                    letterSpacing: 0.20,
-                    textAlign: 'center',
+                  <View style={{ 
+                    width: 21, 
+                    height: 21, 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    // Slightly larger icon for FPL tab since no label
+                    transform: name === "fpl" ? [{ scale: 1.1 }] : undefined,
                   }}>
-                    {label}
-                  </Text>
+                    <Icon size={name === "fpl" ? 23 : 21} color={color} />
+                  </View>
+                  {showLabel && (
+                    <Text style={{
+                      color,
+                      fontSize: 10,
+                      fontFamily: 'DMSans-Medium',
+                      fontWeight: '600',
+                      letterSpacing: 0.20,
+                      textAlign: 'center',
+                    }}>
+                      {label}
+                    </Text>
+                  )}
                   {focused ? (
                     <View style={{
                       width: 4, height: 4, borderRadius: 2,

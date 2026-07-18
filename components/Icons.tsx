@@ -133,6 +133,48 @@ export const ProfileIcon = ({ size = 21, color = "#8E9BAE" }: { size?: number; c
   </Svg>
 );
 
+// ── NEW: FPL Trophy Icon ──────────────────────────────────────────────────────
+
+export const FplIcon = ({ size = 21, color = "#8E9BAE" }: { size?: number; color?: string }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    {/* Trophy cup body */}
+    <Path
+      d="M7 4h10v3c0 2.5-2 4.5-4.5 4.5h-1C9 11.5 7 9.5 7 7V4z"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinejoin="round"
+    />
+    {/* Left handle */}
+    <Path
+      d="M7 5.5H5c0 2 1.5 3.5 3.5 3.5"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+    />
+    {/* Right handle */}
+    <Path
+      d="M17 5.5h2c0 2-1.5 3.5-3.5 3.5"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+    />
+    {/* Trophy stem */}
+    <Path
+      d="M10.5 11.5v2h-2v1.5h7v-1.5h-2v-2"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinejoin="round"
+    />
+    {/* Base */}
+    <Rect x={9} y={15} width={6} height={1.5} rx={0.5} stroke={color} strokeWidth={1.5} />
+    {/* Star */}
+    <Path
+      d="M12 6.5l0.6 1.2 1.4 0.2-1 1 0.3 1.4-1.3-0.7-1.3 0.7 0.3-1.4-1-1 1.4-0.2z"
+      fill={color}
+    />
+  </Svg>
+);
+
 export const EyeIcon = ({ size = 18, color = "#8E9BAE" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
@@ -169,13 +211,13 @@ export const EyeOffIcon = ({ size = 18, color = "#8E9BAE" }: { size?: number; co
 export const SyncIcon = ({ size = 15, color = "black" }: { size?: number; color?: string }) => (
   <Svg width={size} height={size} viewBox="0 0 15 15" fill="none">
     <G clipPath="url(#clip0_15_5045)">
-      <Path d="M0.625 2.5V6.25H4.375" stroke={color} strokeWidth="1.5625" strokeLinecap="round"/>
-      <Path d="M14.375 12.5V8.75H10.625" stroke={color} strokeWidth="1.5625" strokeLinecap="round"/>
-      <Path d="M12.8062 5.62547C12.4893 4.72972 11.9505 3.92885 11.2403 3.29761C10.5301 2.66637 9.67158 2.22533 8.74482 2.01564C7.81806 1.80594 6.85328 1.83444 5.94051 2.09846C5.02773 2.36248 4.19672 2.85342 3.525 3.52547L0.625 6.25047M14.375 8.75047L11.475 11.4755C10.8033 12.1475 9.97227 12.6385 9.05949 12.9025C8.14672 13.1665 7.18194 13.195 6.25518 12.9853C5.32842 12.7756 4.46988 12.3346 3.75967 11.7033C3.04946 11.0721 2.51073 10.2712 2.19375 9.37547" stroke={color} strokeWidth="1.5625" strokeLinecap="round"/>
+      <Path d="M0.625 2.5V6.25H4.375" stroke={color} strokeWidth="1.5625" strokeLinecap="round" />
+      <Path d="M14.375 12.5V8.75H10.625" stroke={color} strokeWidth="1.5625" strokeLinecap="round" />
+      <Path d="M12.8062 5.62547C12.4893 4.72972 11.9505 3.92885 11.2403 3.29761C10.5301 2.66637 9.67158 2.22533 8.74482 2.01564C7.81806 1.80594 6.85328 1.83444 5.94051 2.09846C5.02773 2.36248 4.19672 2.85342 3.525 3.52547L0.625 6.25047M14.375 8.75047L11.475 11.4755C10.8033 12.1475 9.97227 12.6385 9.05949 12.9025C8.14672 13.1665 7.18194 13.195 6.25518 12.9853C5.32842 12.7756 4.46988 12.3346 3.75967 11.7033C3.04946 11.0721 2.51073 10.2712 2.19375 9.37547" stroke={color} strokeWidth="1.5625" strokeLinecap="round" />
     </G>
     <Defs>
       <ClipPath id="clip0_15_5045">
-        <Rect width="15" height="15" fill="white"/>
+        <Rect width="15" height="15" fill="white" />
       </ClipPath>
     </Defs>
   </Svg>
@@ -192,4 +234,3 @@ export const SendIcon = ({ size = 16, color = "black" }: { size?: number; color?
     />
   </Svg>
 );
-
