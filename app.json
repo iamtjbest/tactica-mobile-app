@@ -20,7 +20,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0D1317"
+        "backgroundColor": "#0D1317",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "package": "com.lineafootball.tactica",
       "versionCode": 2
