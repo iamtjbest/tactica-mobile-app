@@ -12,7 +12,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.lineafootball.tactica",
+      "bundleIdentifier": "com.tactica.app",
       "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -23,8 +23,9 @@
         "backgroundColor": "#0D1317",
         "foregroundImage": "./assets/adaptive-icon.png"
       },
-      "package": "com.lineafootball.tactica",
-      "versionCode": 2
+      "package": "com.tactica.app",
+      "versionCode": 2,
+      "googleServicesFile": "./google-services.json"
     },
     "extra": {
       "apiUrl": "https://tactica-backend-hdbd.onrender.com",
