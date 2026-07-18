@@ -3,7 +3,7 @@
     "name": "Tactica",
     "slug": "tactica",
     "scheme": "tactica",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -13,6 +13,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.lineafootball.tactica",
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -21,7 +22,8 @@
       "adaptiveIcon": {
         "backgroundColor": "#0D1317"
       },
-      "package": "com.lineafootball.tactica"
+      "package": "com.lineafootball.tactica",
+      "versionCode": 2
     },
     "extra": {
       "apiUrl": "https://tactica-backend-hdbd.onrender.com",
@@ -32,7 +34,18 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": false
+          },
+          "ios": {
+            "newArchEnabled": false
+          }
+        }
+      ]
     ],
     "owner": "iamtjbest"
   }

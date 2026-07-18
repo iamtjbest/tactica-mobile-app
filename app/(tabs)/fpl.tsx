@@ -423,7 +423,7 @@ function FixtureTicker() {
                     {fix.gameweek != null && (
                       <Text style={styles.fixtureGwText}>GW{fix.gameweek}</Text>
                     )}
-                    <Text style={styles.fixtureDate}>{fix.date}</Text>
+                    <Text style={styles.fixtureItemDate}>{fix.date}</Text>
                   </View>
                   <View style={[styles.venueBadge, fix.venue === "H" ? styles.venueHome : styles.venueAway]}>
                     <Text style={styles.venueText}>{fix.venue}</Text>
@@ -554,10 +554,8 @@ function CaptainPick() {
           {showScoring && (
             <View style={styles.scoringCard}>
               <Text style={styles.scoringText}>
-                <Text style={styles.scoringBold}>FPL score</Text> = ppg×2 + xG/90×3 + xA/90×2 + form×0.5 + ep_next×0.3{"
-"}
-                <Text style={styles.scoringBold}>Weighted</Text> = FPL score × fixture multiplier{"
-"}
+                <Text style={styles.scoringBold}>FPL score</Text> = ppg×2 + xG/90×3 + xA/90×2 + form×0.5 + ep_next×0.3{"\n"}
+                <Text style={styles.scoringBold}>Weighted</Text> = FPL score × fixture multiplier{"\n"}
                 Real FPL API data — actual prices, ownership %, and expected points.
               </Text>
             </View>
@@ -1118,7 +1116,7 @@ const styles = StyleSheet.create({
   fixtureItem: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
   fixtureGw: { width: 44, flexShrink: 0 },
   fixtureGwText: { fontSize: 9, fontFamily: FONT.bold, color: C.mt, textTransform: "uppercase" },
-  fixtureDate: { fontSize: 11, fontFamily: FONT.medium, color: C.tx },
+  fixtureItemDate: { fontSize: 11, fontFamily: FONT.medium, color: C.tx },
   venueBadge: { width: 28, height: 28, borderRadius: 7, justifyContent: "center", alignItems: "center", borderWidth: 1 },
   venueHome: { backgroundColor: "rgba(204,255,0,0.1)", borderColor: "rgba(204,255,0,0.2)" },
   venueAway: { backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.1)" },
