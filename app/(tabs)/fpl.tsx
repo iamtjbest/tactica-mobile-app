@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView, Platform, Dimensions
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { C, CARD_SHADOW, FONT } from "@/constants/theme";
 
@@ -104,11 +103,26 @@ interface DiffResponse {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const PL_TEAMS = [
-  "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton",
-  "Burnley", "Chelsea", "Crystal Palace", "Everton", "Fulham",
-  "Leeds", "Liverpool", "Manchester City", "Manchester United",
-  "Newcastle United", "Nottingham Forest", "Sunderland",
-  "Tottenham Hotspur", "West Ham United", "Wolverhampton",
+  "Arsenal",
+  "Aston Villa",
+  "AFC Bournemouth",
+  "Brentford",
+  "Brighton & Hove Albion",
+  "Chelsea",
+  "Coventry City",
+  "Crystal Palace",
+  "Everton",
+  "Fulham",
+  "Hull City",
+  "Ipswich Town",
+  "Leeds United",
+  "Liverpool",
+  "Manchester City",
+  "Manchester United",
+  "Newcastle United",
+  "Nottingham Forest",
+  "Sunderland",
+  "Tottenham Hotspur",
 ].sort();
 
 const POSITIONS = [
@@ -125,14 +139,14 @@ const POS_LABEL: Record<string, string> = {
 const FDR_COLORS = {
   green: { bg: "rgba(0,230,118,0.15)", border: "rgba(0,230,118,0.3)", text: "#00E676" },
   amber: { bg: "rgba(255,184,48,0.1)", border: "rgba(255,184,48,0.25)", text: "#FFB830" },
-  red:   { bg: "rgba(255,71,87,0.1)",  border: "rgba(255,71,87,0.25)",  text: "#FF4757" },
+  red: { bg: "rgba(255,71,87,0.1)", border: "rgba(255,71,87,0.25)", text: "#FF4757" },
 };
 
 const PRICE_PRESETS = [
-  { label: "Budget",  min: 3.5,  max: 6.0  },
-  { label: "Mid",     min: 6.0,  max: 9.0  },
-  { label: "Premium", min: 9.0,  max: 12.0 },
-  { label: "Elite",   min: 12.0, max: 20.0 },
+  { label: "Budget", min: 3.5, max: 6.0 },
+  { label: "Mid", min: 6.0, max: 9.0 },
+  { label: "Premium", min: 9.0, max: 12.0 },
+  { label: "Elite", min: 12.0, max: 20.0 },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -282,57 +296,157 @@ function PlayerCard({ pick, rank, showTeam = false }: {
   );
 }
 
-// ── Team Selector Modal ───────────────────────────────────────────────────────
+// ── Team Selector Sheet (rendered at ROOT level, not inside ScrollView) ───────
 
-function TeamSelector({ visible, onClose, onSelect, title, teams = PL_TEAMS }: {
+function TeamSelectorSheet({ visible, onClose, onSelect, title }: {
   visible: boolean; onClose: () => void; onSelect: (t: string) => void;
-  title: string; teams?: string[];
+  title: string;
 }) {
   const [q, setQ] = useState("");
-  const filtered = teams.filter(t => t.toLowerCase().includes(q.toLowerCase()));
+  const filtered = PL_TEAMS.filter(t => t.toLowerCase().includes(q.toLowerCase()));
 
   if (!visible) return null;
 
   return (
-    <View style={styles.modalOverlay}>
-      <TouchableOpacity style={styles.modalBackdrop} onPress={onClose} activeOpacity={1} />
-      <View style={styles.modalSheet}>
-        <View style={styles.modalDrag} />
-        <Text style={styles.modalTitle}>{title}</Text>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={14} color={C.mt} />
-          <TextInput
-            style={styles.searchInput}
-            value={q}
-            onChangeText={setQ}
-            placeholder="Search clubs…"
-            placeholderTextColor="rgba(142,155,174,0.4)"
-            autoCorrect={false}
-          />
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+      <View style={styles.modalOverlay} pointerEvents="auto">
+        <TouchableOpacity style={styles.modalBackdrop} onPress={onClose} activeOpacity={1} />
+        <View style={styles.modalSheet}>
+          <View style={styles.modalDrag} />
+          <Text style={styles.modalTitle}>{title}</Text>
+          <View style={styles.searchBox}>
+            <Ionicons name="search" size={14} color={C.mt} />
+            <TextInput
+              style={styles.searchInput}
+              value={q}
+              onChangeText={setQ}
+              placeholder="Search clubs…"
+              placeholderTextColor="rgba(142,155,174,0.4)"
+              autoCorrect={false}
+            />
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {filtered.map(team => (
+              <TouchableOpacity
+                key={team}
+                style={styles.teamRow}
+                onPress={() => { onSelect(team); setQ(""); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.teamRowText}>{team}</Text>
+                <Ionicons name="chevron-forward" size={14} color={C.bd} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {filtered.map(team => (
-            <TouchableOpacity
-              key={team}
-              style={styles.teamRow}
-              onPress={() => { onSelect(team); setQ(""); }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.teamRowText}>{team}</Text>
-              <Ionicons name="chevron-forward" size={14} color={C.bd} />
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
       </View>
     </View>
   );
 }
 
-// ── Tab 1: Fixture Ticker ─────────────────────────────────────────────────────
+// ── Root Screen ───────────────────────────────────────────────────────────────
 
-function FixtureTicker() {
-  const [team, setTeam] = useState("Arsenal");
-  const [modalOpen, setModalOpen] = useState(false);
+const TABS = [
+  { id: "ticker", label: "📅 Fixtures" },
+  { id: "captain", label: "🎯 Captain" },
+  { id: "transfer", label: "🔄 Transfers" },
+  { id: "diff", label: "💡 Differentials" },
+] as const;
+
+type TabId = typeof TABS[number]["id"];
+
+export default function FplScreen() {
+  const insets = useSafeAreaInsets();
+  const [tab, setTab] = useState<TabId>("ticker");
+
+  // Modal states — lifted to root level so they render outside ScrollView
+  const [tickerModalOpen, setTickerModalOpen] = useState(false);
+  const [captainModalOpen, setCaptainModalOpen] = useState(false);
+
+  // Team states — also lifted so modal callbacks can update them
+  const [tickerTeam, setTickerTeam] = useState("Arsenal");
+  const [captainTeam, setCaptainTeam] = useState("Arsenal");
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
+    >
+      <View style={styles.root}>
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: Math.max(16, insets.top) + 6 }]}>
+          <View>
+            <Text style={styles.eyebrow}>FPL SCOUT</Text>
+            <Text style={styles.mainTitle}>Fantasy Premier League</Text>
+            <Text style={styles.subtitle}>Real FPL prices · Real ownership % · Fixture difficulty · AI picks</Text>
+          </View>
+        </View>
+
+        {/* Tab Bar */}
+        <View style={styles.tabBar}>
+          {TABS.map(t => (
+            <TouchableOpacity
+              key={t.id}
+              style={[styles.tabBtn, tab === t.id && styles.tabBtnActive]}
+              onPress={() => setTab(t.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.tabBtnText, tab === t.id && styles.tabBtnTextActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Content */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {tab === "ticker" && (
+            <FixtureTickerRoot
+              team={tickerTeam}
+              setTeam={setTickerTeam}
+              onOpenModal={() => setTickerModalOpen(true)}
+            />
+          )}
+          {tab === "captain" && (
+            <CaptainPickRoot
+              team={captainTeam}
+              setTeam={setCaptainTeam}
+              onOpenModal={() => setCaptainModalOpen(true)}
+            />
+          )}
+          {tab === "transfer" && <TransferRecommender />}
+          {tab === "diff" && <DifferentialFinder />}
+        </ScrollView>
+
+        {/* Modals rendered at ROOT level — outside ScrollView, full screen overlay */}
+        <TeamSelectorSheet
+          visible={tickerModalOpen}
+          onClose={() => setTickerModalOpen(false)}
+          onSelect={t => { setTickerTeam(t); setTickerModalOpen(false); }}
+          title="Select Club"
+        />
+        <TeamSelectorSheet
+          visible={captainModalOpen}
+          onClose={() => setCaptainModalOpen(false)}
+          onSelect={t => { setCaptainTeam(t); setCaptainModalOpen(false); }}
+          title="Select Club"
+        />
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+// ── Wrapper components that receive lifted state ────────────────────────────────
+
+function FixtureTickerRoot({ team, setTeam, onOpenModal }: {
+  team: string; setTeam: (t: string) => void; onOpenModal: () => void;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<TickerResponse | null>(null);
@@ -356,7 +470,7 @@ function FixtureTicker() {
     <View style={styles.tabContent}>
       <Text style={styles.tabDesc}>All fixtures rated by difficulty. Green = buy · Red = sell.</Text>
 
-      <TouchableOpacity style={styles.selectorBtn} onPress={() => setModalOpen(true)} activeOpacity={0.75}>
+      <TouchableOpacity style={styles.selectorBtn} onPress={onOpenModal} activeOpacity={0.75}>
         <View style={styles.selectorIcon}><Text style={{ fontSize: 16 }}>⚽</Text></View>
         <View style={{ flex: 1, paddingHorizontal: 12 }}>
           <Text style={styles.selectorLabel}>Club</Text>
@@ -447,28 +561,19 @@ function FixtureTicker() {
               {easy >= total * 0.6
                 ? `${data.team} have an excellent run — ${easy}/${total} fixtures easy. Strong to hold their attackers.`
                 : hard >= total * 0.6
-                ? `Tough run for ${data.team} — ${hard}/${total} hard. Be selective.`
-                : `${data.team}: ${easy} easy, ${total - easy - hard} medium, ${hard} hard.`}
+                  ? `Tough run for ${data.team} — ${hard}/${total} hard. Be selective.`
+                  : `${data.team}: ${easy} easy, ${total - easy - hard} medium, ${hard} hard.`}
             </Text>
           </View>
         </View>
       )}
-
-      <TeamSelector
-        visible={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSelect={t => { setTeam(t); setModalOpen(false); }}
-        title="Select Club"
-      />
     </View>
   );
 }
 
-// ── Tab 2: Captain Pick ───────────────────────────────────────────────────────
-
-function CaptainPick() {
-  const [team, setTeam] = useState("Arsenal");
-  const [modalOpen, setModalOpen] = useState(false);
+function CaptainPickRoot({ team, setTeam, onOpenModal }: {
+  team: string; setTeam: (t: string) => void; onOpenModal: () => void;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<CaptainResponse | null>(null);
@@ -491,7 +596,7 @@ function CaptainPick() {
         Captain candidates ranked by pts/game × xG × fixture difficulty. Real FPL prices and ownership.
       </Text>
 
-      <TouchableOpacity style={styles.selectorBtn} onPress={() => setModalOpen(true)} activeOpacity={0.75}>
+      <TouchableOpacity style={styles.selectorBtn} onPress={onOpenModal} activeOpacity={0.75}>
         <View style={styles.selectorIcon}><Text style={{ fontSize: 16 }}>🎯</Text></View>
         <View style={{ flex: 1, paddingHorizontal: 12 }}>
           <Text style={styles.selectorLabel}>Club</Text>
@@ -562,18 +667,11 @@ function CaptainPick() {
           )}
         </View>
       )}
-
-      <TeamSelector
-        visible={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSelect={t => { setTeam(t); setModalOpen(false); }}
-        title="Select Club"
-      />
     </View>
   );
 }
 
-// ── Tab 3: Transfer Recommender ───────────────────────────────────────────────
+// ── Tab 3: Transfer Recommender ─────────────────────────────────────────────
 
 function TransferRecommender() {
   const [position, setPosition] = useState("FWD");
@@ -804,7 +902,7 @@ function DifferentialFinder() {
             placeholder="Max ownership %"
             placeholderTextColor="rgba(142,155,174,0.4)"
           />
-          <Text style={[styles.priceSymbol, { right: 16, left: undefined }]}>%</Text>
+          <Text style={[styles.priceSymbol, { position: "absolute", right: 16, left: undefined }]}>%</Text>
         </View>
       </View>
 
@@ -906,70 +1004,6 @@ function DifferentialFinder() {
         </View>
       )}
     </View>
-  );
-}
-
-// ── Root Screen ───────────────────────────────────────────────────────────────
-
-const TABS = [
-  { id: "ticker",   label: "📅 Fixtures" },
-  { id: "captain",  label: "🎯 Captain" },
-  { id: "transfer", label: "🔄 Transfers" },
-  { id: "diff",     label: "💡 Differentials" },
-] as const;
-
-type TabId = typeof TABS[number]["id"];
-
-export default function FplScreen() {
-  const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<TabId>("ticker");
-
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
-    >
-      <View style={styles.root}>
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: Math.max(16, insets.top) + 6 }]}>
-          <View>
-            <Text style={styles.eyebrow}>FPL SCOUT</Text>
-            <Text style={styles.mainTitle}>Fantasy Premier League</Text>
-            <Text style={styles.subtitle}>Real FPL prices · Real ownership % · Fixture difficulty · AI picks</Text>
-          </View>
-        </View>
-
-        {/* Tab Bar */}
-        <View style={styles.tabBar}>
-          {TABS.map(t => (
-            <TouchableOpacity
-              key={t.id}
-              style={[styles.tabBtn, tab === t.id && styles.tabBtnActive]}
-              onPress={() => setTab(t.id)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.tabBtnText, tab === t.id && styles.tabBtnTextActive]}>
-                {t.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Content */}
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {tab === "ticker" && <FixtureTicker />}
-          {tab === "captain" && <CaptainPick />}
-          {tab === "transfer" && <TransferRecommender />}
-          {tab === "diff" && <DifferentialFinder />}
-        </ScrollView>
-      </View>
-    </KeyboardAvoidingView>
   );
 }
 
@@ -1154,10 +1188,10 @@ const styles = StyleSheet.create({
   topDiffBadge: { position: "absolute", top: -10, left: 12, zIndex: 10, backgroundColor: C.volt, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
   topDiffBadgeText: { fontSize: 9, fontFamily: FONT.bold, color: "#000" },
 
-  // Modal
-  modalOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(13,19,23,0.85)" },
-  modalSheet: { position: "absolute", bottom: 0, left: 0, right: 0, height: "72%", backgroundColor: C.sur, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: C.bd, padding: 22 },
+  // Modal — rendered at ROOT level with absolute positioning
+  modalOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 999, backgroundColor: "rgba(13,19,23,0.85)", justifyContent: "flex-end" },
+  modalBackdrop: { flex: 1 },
+  modalSheet: { backgroundColor: C.sur, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: C.bd, padding: 22, maxHeight: "72%" },
   modalDrag: { width: 38, height: 4, backgroundColor: C.bd, borderRadius: 2, alignSelf: "center", marginBottom: 16 },
   modalTitle: { fontSize: 18, fontFamily: FONT.headingBold, color: C.tx, marginBottom: 14 },
   searchBox: { height: 46, backgroundColor: C.bg, borderRadius: 11, borderWidth: 1, borderColor: C.bd, flexDirection: "row", alignItems: "center", paddingHorizontal: 12, gap: 8, marginBottom: 14 },

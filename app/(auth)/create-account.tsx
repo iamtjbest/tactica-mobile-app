@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Pressable, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, OAuthProvider, getAdditionalUserInfo, signInWithEmailAndPassword } from "firebase/auth";

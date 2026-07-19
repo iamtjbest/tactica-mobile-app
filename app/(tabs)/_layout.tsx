@@ -4,11 +4,11 @@ import { View, Text } from "react-native";
 import { HomeIcon, PitchIcon, ChatIcon, ProfileIcon, FplIcon } from "@/components/Icons";
 
 const TABS = [
-  { name: "index",    label: "Home",    Icon: HomeIcon,    showLabel: true },
-  { name: "scout",    label: "Engine",  Icon: PitchIcon,   showLabel: true },
-  { name: "ai-chat",  label: "AIChat",  Icon: ChatIcon,    showLabel: true },
-  { name: "fpl",      label: "FPL",     Icon: FplIcon,     showLabel: false },  // Icon-only
-  { name: "profile",  label: "Profile", Icon: ProfileIcon, showLabel: true },
+  { name: "index", label: "Home", Icon: HomeIcon, showLabel: true },
+  { name: "scout", label: "Engine", Icon: PitchIcon, showLabel: true },
+  { name: "ai-chat", label: "AIChat", Icon: ChatIcon, showLabel: true },
+  { name: "fpl", label: "FPL", Icon: FplIcon, showLabel: false },  // Icon-only
+  { name: "profile", label: "Profile", Icon: ProfileIcon, showLabel: true },
 ] as const;
 
 export default function TabLayout() {
@@ -50,10 +50,10 @@ export default function TabLayout() {
                   gap: showLabel ? 4 : 2,
                   height: 48,
                 }}>
-                  <View style={{ 
-                    width: 21, 
-                    height: 21, 
-                    justifyContent: 'center', 
+                  <View style={{
+                    width: 21,
+                    height: 21,
+                    justifyContent: 'center',
                     alignItems: 'center',
                     // Slightly larger icon for FPL tab since no label
                     transform: name === "fpl" ? [{ scale: 1.1 }] : undefined,
