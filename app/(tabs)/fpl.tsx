@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, ActivityIndicator, Alert, Clipboard,
-  KeyboardAvoidingView, Platform, Dimensions
+  KeyboardAvoidingView, Platform, Dimensions, Modal
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -308,39 +308,44 @@ function TeamSelectorSheet({ visible, onClose, onSelect, title }: {
   if (!visible) return null;
 
   return (
-    <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
-      <View style={styles.modalOverlay} pointerEvents="auto">
-        <TouchableOpacity style={styles.modalBackdrop} onPress={onClose} activeOpacity={1} />
-        <View style={styles.modalSheet}>
-          <View style={styles.modalDrag} />
-          <Text style={styles.modalTitle}>{title}</Text>
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={14} color={C.mt} />
-            <TextInput
-              style={styles.searchInput}
-              value={q}
-              onChangeText={setQ}
-              placeholder="Search clubs…"
-              placeholderTextColor="rgba(142,155,174,0.4)"
-              autoCorrect={false}
-            />
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalBackdrop} onPress={onClose} activeOpacity={1} />
+          <View style={styles.modalSheet}>
+            <View style={styles.modalDrag} />
+            <Text style={styles.modalTitle}>{title}</Text>
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={14} color={C.mt} />
+              <TextInput
+                style={styles.searchInput}
+                value={q}
+                onChangeText={setQ}
+                placeholder="Search clubs…"
+                placeholderTextColor="rgba(142,155,174,0.4)"
+                autoCorrect={false}
+              />
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {filtered.map(team => (
+                <TouchableOpacity
+                  key={team}
+                  style={styles.teamRow}
+                  onPress={() => { onSelect(team); setQ(""); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.teamRowText}>{team}</Text>
+                  <Ionicons name="chevron-forward" size={14} color={C.bd} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            {filtered.map(team => (
-              <TouchableOpacity
-                key={team}
-                style={styles.teamRow}
-                onPress={() => { onSelect(team); setQ(""); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.teamRowText}>{team}</Text>
-                <Ionicons name="chevron-forward" size={14} color={C.bd} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
         </View>
-      </View>
-    </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -675,21 +680,21 @@ function CaptainPickRoot({ team, setTeam, onOpenModal }: {
 
 function TransferRecommender() {
   const [position, setPosition] = useState("FWD");
-  const [minPrice, setMinPrice] = useState(0.0);
-  const [maxPrice, setMaxPrice] = useState(9.0);
+  const [minPrice, setMinPrice] = useState("0.0");
+  const [maxPrice, setMaxPrice] = useState("9.0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<TransferResponse | null>(null);
 
   const fetch_ = async () => {
-    if (minPrice >= maxPrice) {
+    if (parseFloat(minPrice) >= parseFloat(maxPrice)) {
       setError("Min price must be less than max.");
       return;
     }
     setLoading(true); setError(""); setData(null);
     try {
       setData(await apiFetch(
-        `${API_BASE}/api/fpl/transfers?position=${position}&min_price=${minPrice}&max_price=${maxPrice}&limit=10`
+        `${API_BASE}/api/fpl/transfers?position=${position}&min_price=${parseFloat(minPrice) || 0}&max_price=${parseFloat(maxPrice) || 15}&limit=10`
       ));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -730,11 +735,11 @@ function TransferRecommender() {
           {PRICE_PRESETS.map(p => (
             <TouchableOpacity
               key={p.label}
-              style={[styles.presetChip, minPrice === p.min && maxPrice === p.max && styles.presetChipActive]}
-              onPress={() => { setMinPrice(p.min); setMaxPrice(p.max); }}
+              style={[styles.presetChip, parseFloat(minPrice) === p.min && parseFloat(maxPrice) === p.max && styles.presetChipActive]}
+              onPress={() => { setMinPrice(String(p.min)); setMaxPrice(String(p.max)); }}
               activeOpacity={0.8}
             >
-              <Text style={[styles.presetChipText, minPrice === p.min && maxPrice === p.max && styles.presetChipTextActive]}>
+              <Text style={[styles.presetChipText, parseFloat(minPrice) === p.min && parseFloat(maxPrice) === p.max && styles.presetChipTextActive]}>
                 {p.label}
               </Text>
             </TouchableOpacity>
@@ -742,27 +747,39 @@ function TransferRecommender() {
         </View>
         <View style={styles.priceInputs}>
           <View style={styles.priceInputBox}>
+            <TouchableOpacity onPress={() => setMinPrice(p => Math.max(0, (parseFloat(p) || 0) - 0.1).toFixed(1))} style={{ paddingRight: 4 }}>
+              <Ionicons name="remove" size={18} color={C.mt} />
+            </TouchableOpacity>
             <Text style={styles.priceSymbol}>£</Text>
             <TextInput
-              style={styles.priceInput}
-              value={String(minPrice)}
-              onChangeText={v => setMinPrice(parseFloat(v) || 0)}
+              style={[styles.priceInput, { textAlign: 'center' }]}
+              value={minPrice}
+              onChangeText={setMinPrice}
               keyboardType="decimal-pad"
               placeholder="Min"
               placeholderTextColor="rgba(142,155,174,0.4)"
             />
+            <TouchableOpacity onPress={() => setMinPrice(p => ((parseFloat(p) || 0) + 0.1).toFixed(1))} style={{ paddingLeft: 4 }}>
+              <Ionicons name="add" size={18} color={C.mt} />
+            </TouchableOpacity>
           </View>
           <Text style={styles.priceArrow}>→</Text>
           <View style={styles.priceInputBox}>
+            <TouchableOpacity onPress={() => setMaxPrice(p => Math.max(0, (parseFloat(p) || 0) - 0.1).toFixed(1))} style={{ paddingRight: 4 }}>
+              <Ionicons name="remove" size={18} color={C.mt} />
+            </TouchableOpacity>
             <Text style={styles.priceSymbol}>£</Text>
             <TextInput
-              style={styles.priceInput}
-              value={String(maxPrice)}
-              onChangeText={v => setMaxPrice(parseFloat(v) || 15)}
+              style={[styles.priceInput, { textAlign: 'center' }]}
+              value={maxPrice}
+              onChangeText={setMaxPrice}
               keyboardType="decimal-pad"
               placeholder="Max"
               placeholderTextColor="rgba(142,155,174,0.4)"
             />
+            <TouchableOpacity onPress={() => setMaxPrice(p => ((parseFloat(p) || 0) + 0.1).toFixed(1))} style={{ paddingLeft: 4 }}>
+              <Ionicons name="add" size={18} color={C.mt} />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -828,8 +845,8 @@ function TransferRecommender() {
 
 function DifferentialFinder() {
   const [position, setPosition] = useState("FWD");
-  const [maxOwnership, setMaxOwnership] = useState(15.0);
-  const [maxPrice, setMaxPrice] = useState(8.0);
+  const [maxOwnership, setMaxOwnership] = useState("15.0");
+  const [maxPrice, setMaxPrice] = useState("8.0");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState<DiffResponse | null>(null);
@@ -838,7 +855,7 @@ function DifferentialFinder() {
     setLoading(true); setError(""); setData(null);
     try {
       setData(await apiFetch(
-        `${API_BASE}/api/fpl/differentials?position=${position}&max_ownership=${maxOwnership}&max_price=${maxPrice}&limit=8`
+        `${API_BASE}/api/fpl/differentials?position=${position}&max_ownership=${parseFloat(maxOwnership) || 15}&max_price=${parseFloat(maxPrice) || 15}&limit=8`
       ));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -883,26 +900,32 @@ function DifferentialFinder() {
           {[5, 10, 15, 20, 25].map(v => (
             <TouchableOpacity
               key={v}
-              style={[styles.presetChip, maxOwnership === v && styles.presetChipActive]}
-              onPress={() => setMaxOwnership(v)}
+              style={[styles.presetChip, parseFloat(maxOwnership) === v && styles.presetChipActive]}
+              onPress={() => setMaxOwnership(String(v))}
               activeOpacity={0.8}
             >
-              <Text style={[styles.presetChipText, maxOwnership === v && styles.presetChipTextActive]}>
+              <Text style={[styles.presetChipText, parseFloat(maxOwnership) === v && styles.presetChipTextActive]}>
                 &lt;{v}%
               </Text>
             </TouchableOpacity>
           ))}
         </View>
         <View style={styles.priceInputBox}>
+          <TouchableOpacity onPress={() => setMaxOwnership(p => Math.max(0, (parseFloat(p) || 0) - 1.0).toFixed(1))} style={{ paddingRight: 4 }}>
+            <Ionicons name="remove" size={18} color={C.mt} />
+          </TouchableOpacity>
           <TextInput
-            style={[styles.priceInput, { paddingLeft: 16 }]}
-            value={String(maxOwnership)}
-            onChangeText={v => setMaxOwnership(parseFloat(v) || 15)}
+            style={[styles.priceInput, { textAlign: 'center' }]}
+            value={maxOwnership}
+            onChangeText={setMaxOwnership}
             keyboardType="decimal-pad"
             placeholder="Max ownership %"
             placeholderTextColor="rgba(142,155,174,0.4)"
           />
-          <Text style={[styles.priceSymbol, { position: "absolute", right: 16, left: undefined }]}>%</Text>
+          <Text style={[styles.priceSymbol, { position: "absolute", right: 32, left: undefined }]}>%</Text>
+          <TouchableOpacity onPress={() => setMaxOwnership(p => ((parseFloat(p) || 0) + 1.0).toFixed(1))} style={{ paddingLeft: 4 }}>
+            <Ionicons name="add" size={18} color={C.mt} />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -913,26 +936,32 @@ function DifferentialFinder() {
           {[5.5, 6.5, 7.5, 8.5, 10.0].map(v => (
             <TouchableOpacity
               key={v}
-              style={[styles.presetChip, maxPrice === v && styles.presetChipActive]}
-              onPress={() => setMaxPrice(v)}
+              style={[styles.presetChip, parseFloat(maxPrice) === v && styles.presetChipActive]}
+              onPress={() => setMaxPrice(String(v))}
               activeOpacity={0.8}
             >
-              <Text style={[styles.presetChipText, maxPrice === v && styles.presetChipTextActive]}>
+              <Text style={[styles.presetChipText, parseFloat(maxPrice) === v && styles.presetChipTextActive]}>
                 £{v}m
               </Text>
             </TouchableOpacity>
           ))}
         </View>
         <View style={styles.priceInputBox}>
+          <TouchableOpacity onPress={() => setMaxPrice(p => Math.max(0, (parseFloat(p) || 0) - 0.1).toFixed(1))} style={{ paddingRight: 4 }}>
+            <Ionicons name="remove" size={18} color={C.mt} />
+          </TouchableOpacity>
           <Text style={styles.priceSymbol}>£</Text>
           <TextInput
-            style={styles.priceInput}
-            value={String(maxPrice)}
-            onChangeText={v => setMaxPrice(parseFloat(v) || 8)}
+            style={[styles.priceInput, { textAlign: 'center' }]}
+            value={maxPrice}
+            onChangeText={setMaxPrice}
             keyboardType="decimal-pad"
             placeholder="Max price"
             placeholderTextColor="rgba(142,155,174,0.4)"
           />
+          <TouchableOpacity onPress={() => setMaxPrice(p => ((parseFloat(p) || 0) + 0.1).toFixed(1))} style={{ paddingLeft: 4 }}>
+            <Ionicons name="add" size={18} color={C.mt} />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -1189,7 +1218,7 @@ const styles = StyleSheet.create({
   topDiffBadgeText: { fontSize: 9, fontFamily: FONT.bold, color: "#000" },
 
   // Modal — rendered at ROOT level with absolute positioning
-  modalOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 999, backgroundColor: "rgba(13,19,23,0.85)", justifyContent: "flex-end" },
+  modalOverlay: { flex: 1, zIndex: 999, backgroundColor: "rgba(13,19,23,0.85)", justifyContent: "flex-end" },
   modalBackdrop: { flex: 1 },
   modalSheet: { backgroundColor: C.sur, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: C.bd, padding: 22, maxHeight: "72%" },
   modalDrag: { width: 38, height: 4, backgroundColor: C.bd, borderRadius: 2, alignSelf: "center", marginBottom: 16 },

@@ -7,7 +7,7 @@ const TABS = [
   { name: "index", label: "Home", Icon: HomeIcon, showLabel: true },
   { name: "scout", label: "Engine", Icon: PitchIcon, showLabel: true },
   { name: "ai-chat", label: "AIChat", Icon: ChatIcon, showLabel: true },
-  { name: "fpl", label: "FPL", Icon: FplIcon, showLabel: false },  // Icon-only
+  { name: "fpl", label: "FPL", Icon: FplIcon, showLabel: true },
   { name: "profile", label: "Profile", Icon: ProfileIcon, showLabel: true },
 ] as const;
 
@@ -55,10 +55,8 @@ export default function TabLayout() {
                     height: 21,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    // Slightly larger icon for FPL tab since no label
-                    transform: name === "fpl" ? [{ scale: 1.1 }] : undefined,
                   }}>
-                    <Icon size={name === "fpl" ? 23 : 21} color={color} />
+                    <Icon size={21} color={color} />
                   </View>
                   {showLabel && (
                     <Text style={{

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { StyleSheet, Text, View, Animated, TouchableOpacity, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { C, TOAST_SHADOW } from "@/constants/theme";
+import { C, TOAST_SHADOW, FONT } from "@/constants/theme";
 
 interface TopToastProps {
     visible: boolean;
@@ -39,9 +39,9 @@ export const TopToast = ({ visible, message, type = "info", onClose }: TopToastP
     if (!visible) return null;
 
     const getAccentColor = () => {
-        if (type === "success") return C.grn;
+        if (type === "success") return C.volt;
         if (type === "error") return C.red;
-        return C.cyan;
+        return C.volt;
     };
 
     return (
@@ -108,14 +108,14 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
     },
     titleText: {
-        fontFamily: "DMSans-Bold",
+        fontFamily: FONT.bold,
         fontSize: 14,
         fontWeight: "700",
         marginBottom: 2,
     },
     toastText: {
         color: C.mt,
-        fontFamily: "DMSans-Regular",
+        fontFamily: FONT.regular,
         fontSize: 12,
         lineHeight: 14,
     },

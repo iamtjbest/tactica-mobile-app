@@ -27,8 +27,8 @@ function fmtProb(raw: number): string {
 
 const getPosColor = (pos: string) => {
   if (pos === "GK") return "#FFB830";
-  if (["CB","RB","LB","RWB","LWB","DF"].includes(pos)) return "#60a5fa";
-  if (["CM","CDM","CAM","RM","LM","MF"].includes(pos)) return C.volt;
+  if (["CB", "RB", "LB", "RWB", "LWB", "DF"].includes(pos)) return "#60a5fa";
+  if (["CM", "CDM", "CAM", "RM", "LM", "MF"].includes(pos)) return C.volt;
   return C.red;
 };
 
@@ -38,7 +38,7 @@ const getFormColor = (res: string) => {
   return { bg: "rgba(255,71,87,0.1)", tx: C.red, bd: "rgba(255,71,87,0.25)" };
 };
 
-const FORMATIONS = ["4-3-3","4-4-2","4-2-3-1","3-5-2","3-4-3","5-3-2","4-1-4-1","4-5-1"];
+const FORMATIONS = ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2", "3-4-3", "5-3-2", "4-1-4-1", "4-5-1"];
 
 // ── Skeleton shimmer ──────────────────────────────────────────────────────────
 
@@ -85,14 +85,14 @@ function LoadingSkeleton({ module }: { module: Module }) {
           <>
             <SkeletonBlock h={80} radius={14} mt={8} />
             <SkeletonBlock h={12} w="45%" radius={6} mt={8} />
-            {[1,2,3,4,5].map(i => <SkeletonBlock key={i} h={52} radius={10} mt={6} />)}
+            {[1, 2, 3, 4, 5].map(i => <SkeletonBlock key={i} h={52} radius={10} mt={6} />)}
           </>
         )}
         {module === "sandbox" && (
           <>
             <SkeletonBlock h={80} radius={14} mt={8} />
             <SkeletonBlock h={12} w="60%" radius={6} mt={8} />
-            {[1,2,3].map(i => <SkeletonBlock key={i} h={44} radius={10} mt={6} />)}
+            {[1, 2, 3].map(i => <SkeletonBlock key={i} h={44} radius={10} mt={6} />)}
           </>
         )}
         {module === "live" && (
@@ -278,12 +278,24 @@ function OpponentModule() {
     setLoading(true);
     try {
       await Promise.all([api.squad(homeTeam).catch(() => null), api.squad(awayTeam).catch(() => null)]);
-      const [pred, xi, hf, af] = await Promise.all([
-        api.predict({ my_team: homeTeam, opp_team: awayTeam }),
-        api.lineup(homeTeam, "4-3-3"),
+
+      const [hf, af] = await Promise.all([
         api.form(homeTeam).catch(() => null),
         api.form(awayTeam).catch(() => null),
       ]);
+
+      const [pred, xi] = await Promise.all([
+        api.predict({
+          my_team: homeTeam,
+          opp_team: awayTeam,
+          my_att: hf?.attack ?? 75,
+          my_def: hf?.defence ?? 75,
+          opp_att: af?.attack ?? 75,
+          opp_def: af?.defence ?? 75
+        }),
+        api.lineup(homeTeam, "4-3-3"),
+      ]);
+
       setPredictions(pred);
       setLineup(xi);
       if (hf?.matches) setHomeForm(hf.matches.slice(0, 5).map(m => m.result));
@@ -350,7 +362,7 @@ function OpponentModule() {
       ) : (
         <>
           <View style={s.subTabRow}>
-            {(["form","lineup"] as const).map(tab => (
+            {(["form", "lineup"] as const).map(tab => (
               <TouchableOpacity
                 key={tab}
                 style={[s.subTab, view === tab && s.subTabActive]}
@@ -787,7 +799,7 @@ function LiveSimulatorModule() {
         <Text style={[s.sectionLabel, { marginTop: 20 }]}>MATCH MINUTE</Text>
         <View style={s.card}>
           <View style={s.minuteRow}>
-            {["15","30","45","60","75","90"].map(m => (
+            {["15", "30", "45", "60", "75", "90"].map(m => (
               <TouchableOpacity
                 key={m}
                 style={[s.minuteChip, minute === m && s.minuteChipActive, locked && { opacity: 0.5 }]}
@@ -840,10 +852,10 @@ function LiveSimulatorModule() {
 // ── Root: Engine Hub ──────────────────────────────────────────────────────────
 
 const MODULES: { id: Module; label: string; icon: any; sub: string }[] = [
-  { id: "auto",     label: "Auto-Tactics",     icon: "flash",          sub: "Best XI from form" },
-  { id: "opponent", label: "Opponent Analysis", icon: "analytics",      sub: "Head-to-head scout" },
-  { id: "sandbox",  label: "Coach's Sandbox",   icon: "construct",      sub: "Manual squad draft" },
-  { id: "live",     label: "Live Simulator",    icon: "pulse",          sub: "In-game advice" },
+  { id: "auto", label: "Auto-Tactics", icon: "flash", sub: "Best XI from form" },
+  { id: "opponent", label: "Opponent Analysis", icon: "analytics", sub: "Head-to-head scout" },
+  { id: "sandbox", label: "Coach's Sandbox", icon: "construct", sub: "Manual squad draft" },
+  { id: "live", label: "Live Simulator", icon: "pulse", sub: "In-game advice" },
 ];
 
 export default function EngineHub() {
@@ -910,10 +922,10 @@ export default function EngineHub() {
         </ScrollView>
       ) : (
         <View style={{ flex: 1 }}>
-          {active === "auto"     && <AutoTacticsModule />}
+          {active === "auto" && <AutoTacticsModule />}
           {active === "opponent" && <OpponentModule />}
-          {active === "sandbox"  && <SandboxModule />}
-          {active === "live"     && <LiveSimulatorModule />}
+          {active === "sandbox" && <SandboxModule />}
+          {active === "live" && <LiveSimulatorModule />}
         </View>
       )}
     </View>
